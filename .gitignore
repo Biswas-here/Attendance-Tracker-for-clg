@@ -10,6 +10,7 @@
 .pub/
 /build/
 /coverage/
+/release/
 
 # Symbolication / Obfuscation
 app.*.symbols

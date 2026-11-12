@@ -1,0 +1,231 @@
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
+import '../../core/theme/app_colors.dart';
+
+/// Retro segmented loading bar — matches reference image:
+/// pill outline, bold diagonal-hatch fill on the left, clean empty right side.
+class PaperLinearProgress extends StatelessWidget {
+  final double? percentage;
+  final double targetPercentage;
+  final double height;
+  final double borderRadius;
+  final bool showTargetPin;
+
+  const PaperLinearProgress({
+    super.key,
+    required this.percentage,
+    this.targetPercentage = 75.0,
+    this.height = 13.0,
+    this.borderRadius = 6.0,
+    this.showTargetPin = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final meetsTarget = percentage != null && percentage! >= targetPercentage;
+    final fillColor = percentage == null
+        ? AppColors.unmarked
+        : (meetsTarget ? AppColors.present : AppColors.absent);
+    final val = percentage != null ? (percentage! / 100.0).clamp(0.0, 1.0) : 0.0;
+    final targetVal = (targetPercentage / 100.0).clamp(0.0, 1.0);
+
+    return SizedBox(
+      height: height,
+      child: CustomPaint(
+        painter: _RetroSegmentBarPainter(
+          progress: val,
+          targetProgress: targetVal,
+          fillColor: fillColor,
+          isDark: isDark,
+          showTargetPin: showTargetPin && percentage != null,
+          borderRadius: math.min(borderRadius, height / 2),
+        ),
+        child: const SizedBox.expand(),
+      ),
+    );
+  }
+}
+
+class _RetroSegmentBarPainter extends CustomPainter {
+  final double progress;
+  final double targetProgress;
+  final Color fillColor;
+  final bool isDark;
+  final bool showTargetPin;
+  final double borderRadius;
+
+  _RetroSegmentBarPainter({
+    required this.progress,
+    required this.targetProgress,
+    required this.fillColor,
+    required this.isDark,
+    required this.showTargetPin,
+    required this.borderRadius,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      Radius.circular(borderRadius),
+    );
+
+    // 1. Empty track background
+    final trackColor = isDark ? const Color(0xFF1E1B18) : Colors.white;
+    final trackPaint = Paint()..color = trackColor;
+    canvas.drawRRect(rrect, trackPaint);
+
+    // 2. Filled section with diagonal hatching (clipped to pill)
+    if (progress > 0) {
+      final fillWidth = size.width * progress;
+
+      canvas.save();
+      canvas.clipRRect(rrect);
+
+      // Slight tinted background for the filled zone
+      final bgColor = Color.lerp(fillColor, Colors.white, isDark ? 0.05 : 0.70)!;
+      canvas.drawRect(Rect.fromLTWH(0, 0, fillWidth, size.height), Paint()..color = bgColor);
+
+      // Bold diagonal hatch lines inside the fill zone only
+      final hatchPaint = Paint()
+        ..color = fillColor.withAlpha(isDark ? 180 : 200)
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.square;
+
+      // Clip strictly to filled area
+      canvas.clipRect(Rect.fromLTWH(0, 0, fillWidth, size.height));
+
+      const slashStep = 7.0;
+      for (double x = -size.height; x < fillWidth + size.height; x += slashStep) {
+        canvas.drawLine(
+          Offset(x, size.height),
+          Offset(x + size.height, 0),
+          hatchPaint,
+        );
+      }
+
+      canvas.restore();
+    }
+
+    // 3. Border outline — drawn on top (clean pill border)
+    final borderColor = isDark ? AppColors.darkBorderStrong : fillColor.withAlpha(200);
+    final borderPaint = Paint()
+      ..color = progress > 0 ? borderColor : (isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+    canvas.drawRRect(rrect, borderPaint);
+
+    // 4. Target pin needle
+    if (showTargetPin && targetProgress > 0.05 && targetProgress < 0.98) {
+      final targetX = size.width * targetProgress;
+
+      final needlePaint = Paint()
+        ..color = AppColors.kraftGold
+        ..strokeWidth = 1.8
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(Offset(targetX, 0), Offset(targetX, size.height), needlePaint);
+
+      // Top arrow
+      final arrowPath = Path()
+        ..moveTo(targetX - 2.5, 0)
+        ..lineTo(targetX + 2.5, 0)
+        ..lineTo(targetX, 4.0)
+        ..close();
+      canvas.drawPath(arrowPath, Paint()..color = AppColors.kraftGold);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RetroSegmentBarPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.targetProgress != targetProgress ||
+        oldDelegate.fillColor != fillColor ||
+        oldDelegate.isDark != isDark;
+  }
+}
+
+class PaperCircularProgress extends StatelessWidget {
+  final double? percentage;
+  final double targetPercentage;
+  final double size;
+  final double strokeWidth;
+
+  const PaperCircularProgress({
+    super.key,
+    required this.percentage,
+    this.targetPercentage = 75.0,
+    this.size = 140.0,
+    this.strokeWidth = 12.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final meetsTarget = percentage != null && percentage! >= targetPercentage;
+    final progressColor = percentage == null
+        ? AppColors.unmarked
+        : (meetsTarget ? AppColors.present : AppColors.absent);
+
+    final trackColor = isDark ? const Color(0xFF33302B) : const Color(0xFFECE7DC);
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Background track
+          SizedBox(
+            width: size,
+            height: size,
+            child: CircularProgressIndicator(
+              value: 1.0,
+              strokeWidth: strokeWidth,
+              color: trackColor,
+            ),
+          ),
+          // Actual value arc
+          if (percentage != null)
+            SizedBox(
+              width: size,
+              height: size,
+              child: CircularProgressIndicator(
+                value: (percentage! / 100.0).clamp(0.0, 1.0),
+                strokeWidth: strokeWidth,
+                strokeCap: StrokeCap.round,
+                color: progressColor,
+              ),
+            ),
+          // Inner text content
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                percentage != null ? '${percentage!.toStringAsFixed(1)}%' : '--',
+                style: TextStyle(
+                  fontSize: size * 0.22,
+                  fontWeight: FontWeight.w900,
+                  color: progressColor,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'TARGET ${targetPercentage.toInt()}%',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+

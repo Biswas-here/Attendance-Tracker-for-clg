@@ -1,0 +1,90 @@
+# ============================================================
+# Flutter / Dart
+# ============================================================
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication / Obfuscation
+app.*.symbols
+app.*.map.json
+
+# ============================================================
+# Android
+# ============================================================
+android/local.properties
+android/.gradle/
+android/app/debug/
+android/app/profile/
+android/app/release/
+# Signing key files — NEVER commit these
+android/key.properties
+*.keystore
+*.jks
+*.p12
+*.pem
+
+# ============================================================
+# iOS / macOS
+# ============================================================
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Flutter/GeneratedPluginRegistrant.swift
+**/macos/Flutter/ephemeral/
+
+# ============================================================
+# IDE & Editor
+# ============================================================
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+.atom/
+.history/
+
+# ============================================================
+# OS / System
+# ============================================================
+.DS_Store
+Thumbs.db
+*.swp
+*.pyc
+*.class
+*.log
+.svn/
+.build/
+.buildlog/
+.swiftpm/
+migrate_working_dir/
+
+# ============================================================
+# Secrets & Environment
+# ============================================================
+.env
+.env.*
+google-services.json
+GoogleService-Info.plist
+secrets.dart
+**/secrets/
+
+# ============================================================
+# Misc
+# ============================================================
+pubspec.lock

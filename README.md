@@ -12,43 +12,15 @@
 [![Android](https://img.shields.io/badge/Platform-Android_5.0%2B-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[📦 **Go to Releases (Download APK)**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) · [🌐 **GitHub Pages Site**](https://biswas-here.github.io/Attendance-Tracker-for-clg/)
+[🌐 **GitHub Pages Site**](https://biswas-here.github.io/Attendance-Tracker-for-clg/) · [📦 **Releases Tab**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)
 
 </div>
 
 ---
 
-## 📦 Releases & Downloads
-
-All official APK builds are published under the repository's **[Releases](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** tab. The most recent, recommended release will always appear right at the top.
-
-### Available Versions
-
-| Version | Status | Release Date | Package Name | Compatible Android | Download Link |
-|---|---|---|---|---|---|
-| **v1.0.0 (Version 1.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v1.0.apk` | Android 5.0+ (API 21+) | [**Download v1.0 ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
-
----
-
-### 📲 How To Download From The Releases Tab (Easy 3 Steps)
-
-If you are new to GitHub, here is the easiest way to download and install:
-
-```
-Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  ──▶  Step 3: Tap Attendance-Tracker-v1.0.apk
-```
-
-1. Click on the **[Releases Tab](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** (located on the right sidebar or via the link above).
-2. The **latest version is at the top**. Look at the bottom of the top release card for the section titled **Assets**.
-3. Tap **`Attendance-Tracker-v1.0.apk`** to download it to your phone.
-4. When prompted by your Android browser with *"File might be harmful"*, tap **"Download anyway"** *(standard Android security notice for sideloaded APKs)*.
-5. Open your downloads folder, tap the APK, and select **Install**!
-
----
-
 ## 💡 The Idea Behind The App
 
-### The Problem
+### The College Reality
 In almost every college and university, students face a mandatory attendance requirement—most commonly **75% or 80%**. Dropping below this cut-off leads to serious consequences:
 - Debarment from semester-end examinations.
 - Loss of internal assessment marks.
@@ -136,6 +108,30 @@ Below are placeholders reserved for your app screenshots. Drop your image files 
 | *Weekly Timetable & Spreadsheet Import* | *Notification Preferences & Dark Mode* |
 
 </div>
+
+---
+
+## 📦 Releases & Downloads
+
+All official APK builds are hosted directly under the **[Releases Tab](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** in the right sidebar of the repository.
+
+### Versions List
+
+| Version | Status | Release Date | Package Name | Compatible Android | Location |
+|---|---|---|---|---|---|
+| **v1.0.0 (Version 1.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v1.0.apk` | Android 5.0+ (API 21+) | [**Go to Releases ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
+
+### 📲 How To Download (3 Easy Steps)
+
+```
+Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  ──▶  Step 3: Tap Attendance-Tracker-v1.0.apk
+```
+
+1. Click on the **[Releases Tab](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** in the sidebar on GitHub.
+2. The **latest recommended version (v1.0.0)** is at the top. Under the top release, open the **Assets** section.
+3. Tap **`Attendance-Tracker-v1.0.apk`** to download it directly to your phone.
+4. If Android asks *"File might be harmful"*, tap **"Download anyway"** *(standard Android security notice for sideloaded APKs)*.
+5. Open your downloads folder, tap the APK, and select **Install**!
 
 ---
 

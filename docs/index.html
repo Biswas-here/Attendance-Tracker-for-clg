@@ -141,41 +141,6 @@
       color: var(--text-muted); font-size: 1.05rem; max-width: 620px; margin: 0 auto;
     }
 
-    /* ---- RELEASES CARD & TABLE ---- */
-    .releases-card {
-      background: var(--surface); border-radius: var(--radius-lg);
-      padding: 2.5rem; border: 1px solid var(--border);
-      box-shadow: var(--shadow-md); margin-bottom: 3rem;
-    }
-    .version-badge-top {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      background: #E8F5E9; color: #2E7D32; font-weight: 800;
-      font-size: 0.82rem; padding: 0.3rem 0.8rem; border-radius: 999px;
-      margin-bottom: 0.8rem;
-    }
-    .version-item-featured {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 1.5rem; padding: 1.6rem;
-      background: #F4FAF6; border: 2px solid var(--accent);
-      border-radius: var(--radius-md); margin-bottom: 1.5rem;
-    }
-    .version-item-featured h3 {
-      font-size: 1.35rem; color: var(--primary); font-weight: 800; margin-bottom: 0.3rem;
-    }
-    .version-item-featured p {
-      font-size: 0.92rem; color: var(--text-muted);
-    }
-    .version-download-btn {
-      background: var(--primary); color: white !important;
-      padding: 0.85rem 1.6rem; border-radius: var(--radius-sm);
-      font-weight: 800; text-decoration: none; display: inline-flex;
-      align-items: center; gap: 0.5rem; transition: all 0.2s;
-    }
-    .version-download-btn:hover {
-      background: var(--primary-hover); transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(27,67,50,0.3);
-    }
-
     /* ---- IDEA / PROBLEM & SOLUTION ---- */
     .idea-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
@@ -282,6 +247,41 @@
       margin-top: 0.9rem; font-size: 0.9rem; font-weight: 700; color: var(--text-main);
     }
 
+    /* ---- RELEASES CARD & TABLE (BOTTOM) ---- */
+    .releases-card {
+      background: var(--surface); border-radius: var(--radius-lg);
+      padding: 2.5rem; border: 1px solid var(--border);
+      box-shadow: var(--shadow-md); margin-top: 2rem;
+    }
+    .version-badge-top {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: #E8F5E9; color: #2E7D32; font-weight: 800;
+      font-size: 0.82rem; padding: 0.3rem 0.8rem; border-radius: 999px;
+      margin-bottom: 0.8rem;
+    }
+    .version-item-featured {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 1.5rem; padding: 1.6rem;
+      background: #F4FAF6; border: 2px solid var(--accent);
+      border-radius: var(--radius-md); margin-bottom: 1.5rem;
+    }
+    .version-item-featured h3 {
+      font-size: 1.35rem; color: var(--primary); font-weight: 800; margin-bottom: 0.3rem;
+    }
+    .version-item-featured p {
+      font-size: 0.92rem; color: var(--text-muted);
+    }
+    .version-download-btn {
+      background: var(--primary); color: white !important;
+      padding: 0.85rem 1.6rem; border-radius: var(--radius-sm);
+      font-weight: 800; text-decoration: none; display: inline-flex;
+      align-items: center; gap: 0.5rem; transition: all 0.2s;
+    }
+    .version-download-btn:hover {
+      background: var(--primary-hover); transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(27,67,50,0.3);
+    }
+
     /* ---- DOWNLOAD & INSTALL STEP-BY-STEP ---- */
     .install-box {
       background: linear-gradient(145deg, #1B4332 0%, #2D6A4F 100%);
@@ -348,11 +348,11 @@
       <span>Attendance Ledger</span>
     </a>
     <ul class="nav-links">
-      <li><a href="#releases">Releases</a></li>
       <li><a href="#about">The Idea</a></li>
       <li><a href="#tech">Languages & Tech</a></li>
       <li><a href="#features">Features</a></li>
       <li><a href="#screenshots">Screenshots</a></li>
+      <li><a href="#releases">Releases</a></li>
       <li><a class="nav-btn" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases" target="_blank">📦 Releases Tab</a></li>
     </ul>
   </nav>
@@ -366,47 +366,16 @@
     <p>A smart, beautiful college attendance tracker built with Flutter and SQLite. Track classes with one tap, know exactly how many you can safely bunk, and get interactive lockscreen reminders.</p>
     <div class="cta-group">
       <a class="btn btn-main" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases" target="_blank">
-        📦 Open Releases Tab & Download
+        📦 Open Releases Tab
       </a>
-      <a class="btn btn-outline" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg" target="_blank">
-        ⭐ View Repository
+      <a class="btn btn-outline" href="#about">
+        💡 Read The Idea
       </a>
     </div>
   </header>
 
-  <!-- SECTION: RELEASES SECTION (TOP OF CONTENT) -->
-  <section id="releases">
-    <div class="container">
-      <div class="section-title">
-        <h2>📦 Releases & Versions</h2>
-        <p>All official builds are distributed through the GitHub Releases tab. The latest recommended version is always pinned at the top.</p>
-      </div>
-
-      <div class="releases-card">
-        <!-- TOP PINNED VERSION (VERSION 1.0) -->
-        <div class="version-badge-top">🟢 LATEST RECOMMENDED VERSION (AT THE TOP)</div>
-        <div class="version-item-featured">
-          <div>
-            <h3>Attendance Tracker — Version 1.0 (v1.0.0)</h3>
-            <p><strong>Package:</strong> <code>Attendance-Tracker-v1.0.apk</code> · <strong>Platform:</strong> Android 5.0+ · <strong>Size:</strong> ~55 MB</p>
-            <p style="margin-top: 0.4rem; font-size: 0.88rem; color: #4B6358;">
-              ✓ Full offline SQLite database · ✓ Smart background alarms with lockscreen actions · ✓ 3D subject charts
-            </p>
-          </div>
-          <a class="version-download-btn" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases" target="_blank">
-            <span>Download in Releases ➜</span>
-          </a>
-        </div>
-
-        <div style="font-size: 0.92rem; color: var(--text-muted); text-align: center;">
-          Looking for older builds or source archives? <a href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases" target="_blank" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Browse all versions on GitHub Releases</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- SECTION: THE IDEA BEHIND THE APP -->
-  <section id="about" style="background: #F2F7F4;">
+  <!-- SECTION 1: THE IDEA BEHIND THE APP (AT THE TOP) -->
+  <section id="about">
     <div class="container">
       <div class="section-title">
         <h2>💡 The Idea Behind The App</h2>
@@ -441,8 +410,8 @@
     </div>
   </section>
 
-  <!-- SECTION: LANGUAGES & TECHNOLOGIES USED -->
-  <section id="tech">
+  <!-- SECTION 2: LANGUAGES & TECHNOLOGIES USED -->
+  <section id="tech" style="background: #F2F7F4;">
     <div class="container">
       <div class="section-title">
         <h2>🛠️ Languages & Tech Stack</h2>
@@ -495,8 +464,8 @@
     </div>
   </section>
 
-  <!-- SECTION: ALL APP FEATURES -->
-  <section id="features" style="background: #F2F7F4;">
+  <!-- SECTION 3: ALL APP FEATURES -->
+  <section id="features">
     <div class="container">
       <div class="section-title">
         <h2>✨ Core Features</h2>
@@ -555,8 +524,8 @@
     </div>
   </section>
 
-  <!-- SECTION: SCREENSHOTS PLACEHOLDERS -->
-  <section id="screenshots">
+  <!-- SECTION 4: SCREENSHOTS PLACEHOLDERS -->
+  <section id="screenshots" style="background: #F2F7F4;">
     <div class="container">
       <div class="section-title">
         <h2>📸 App Screenshots</h2>
@@ -611,7 +580,7 @@
           <div class="placeholder-art">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
             <div class="placeholder-label">Screenshot Placeholder</div>
             <div class="placeholder-sub">Preferences & CSV Import</div>
@@ -622,29 +591,34 @@
     </div>
   </section>
 
-  <!-- SECTION: HOW TO DOWNLOAD FROM RELEASES -->
-  <section style="background: #F2F7F4;">
+  <!-- SECTION 5: RELEASES & DOWNLOADS (AT THE BOTTOM) -->
+  <section id="releases">
     <div class="container">
+      <div class="section-title">
+        <h2>📦 Releases & Downloads</h2>
+        <p>All APK packages are distributed safely through the official GitHub Releases tab.</p>
+      </div>
+
       <div class="install-box">
-        <h2>📲 How To Download From The Releases Tab</h2>
-        <p class="lead">All APK packages are hosted safely under the official GitHub Releases tab.</p>
+        <h2>📲 Download From The Releases Tab</h2>
+        <p class="lead">Check the sidebar of the repository for published versions. The latest recommended version is always at the top.</p>
 
         <!-- 3 Step Installation Guide -->
         <div class="steps-row">
           <div class="step-card">
             <div class="step-num">1</div>
-            <h4>Open Releases Tab</h4>
-            <p>Click the button below to view all published versions. The <strong>latest version (v1.0.0)</strong> is at the top.</p>
+            <h4>Open Releases</h4>
+            <p>Click the button below to view all versions. The <strong>latest recommended release</strong> is at the top.</p>
           </div>
           <div class="step-card">
             <div class="step-num">2</div>
             <h4>Expand "Assets"</h4>
-            <p>Under the top release, find the <strong>Assets</strong> section and tap <code>Attendance-Tracker-v1.0.apk</code>.</p>
+            <p>Under the top release, open the <strong>Assets</strong> section and tap <code>Attendance-Tracker-v1.0.apk</code>.</p>
           </div>
           <div class="step-card">
             <div class="step-num">3</div>
             <h4>Install on Phone</h4>
-            <p>Open your downloads, tap the APK, and tap <strong>Install</strong> (allow from this source if prompted).</p>
+            <p>Open your downloads folder, tap the APK, and select <strong>Install</strong> (allow from this source if prompted).</p>
           </div>
         </div>
 

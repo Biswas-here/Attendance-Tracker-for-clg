@@ -2,7 +2,7 @@
 
 <img src="docs/assets/logo.png" alt="Attendance Ledger Logo" width="105" height="105" style="border-radius:24px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);"/>
 
-# 📋 Attendance Tracker (Attendance Ledger)
+# Attendance Tracker 
 
 **A smart, offline-first college attendance companion that keeps you safely above the 75% threshold without the stress.**
 

@@ -707,6 +707,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: settings.advanceReminderEnabled,
             activeTrackColor: AppColors.craftTeal,
             onChanged: (val) async {
+              if (val) {
+                await NotificationService.instance.requestPermissions();
+                await NotificationService.instance.requestExactAlarmPermission();
+              }
               await prov.updateNotificationPreferences(
                 notificationsEnabled: settings.notificationsEnabled,
                 advanceReminderEnabled: val,

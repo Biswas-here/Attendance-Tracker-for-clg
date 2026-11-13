@@ -252,8 +252,9 @@ class AttendanceProvider with ChangeNotifier {
         await NotificationService.instance.scheduleSessionReminder(
           session: session,
           subjectName: subject.name,
+          room: session.room ?? subject.room,
           advanceMinutes: userSettings?.advanceReminderEnabled == true
-              ? (userSettings?.advanceReminderMinutes ?? 10)
+              ? (userSettings?.advanceReminderMinutes ?? 5)
               : 0,
         );
       }
@@ -315,20 +316,9 @@ class AttendanceProvider with ChangeNotifier {
       await AppDatabase.instance.insertSessionsBatch(newSessions);
       await loadData();
 
-      // Schedule reminders
+      // Schedule reminders for upcoming sessions
       if (userSettings?.notificationsEnabled ?? true) {
-        for (final s in newSessions) {
-          final subject = getSubjectById(s.subjectId);
-          if (subject != null) {
-            await NotificationService.instance.scheduleSessionReminder(
-              session: s,
-              subjectName: subject.name,
-              advanceMinutes: userSettings?.advanceReminderEnabled == true
-                  ? (userSettings?.advanceReminderMinutes ?? 10)
-                  : 0,
-            );
-          }
-        }
+        await syncAllUpcomingNotifications(userSettings ?? UserSettings());
       }
     }
   }
@@ -485,22 +475,39 @@ class AttendanceProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> rescheduleAllNotifications(UserSettings settings) async {
-    await NotificationService.instance.cancelAll();
-    if (!settings.notificationsEnabled) return;
+  /// Syncs notifications for all upcoming classes (next 14 days) in AlarmManager
+  Future<void> syncAllUpcomingNotifications(UserSettings settings) async {
+    if (!settings.notificationsEnabled) {
+      await NotificationService.instance.cancelAll();
+      return;
+    }
 
     final now = DateTime.now();
-    final upcomingSessions = _allSessions.where((s) => s.startDateTime.isAfter(now));
+    final maxDate = now.add(const Duration(days: 14));
+
+    final upcomingSessions = _allSessions.where((s) {
+      if (s.status != AttendanceStatus.unmarked) return false;
+      if (s.endDateTime.isBefore(now)) return false;
+      return s.startDateTime.isBefore(maxDate);
+    }).toList();
+
+    final subjectMap = {for (var s in _subjects) s.id: s.name};
+    final roomMap = {for (var s in _subjects) s.id: s.room};
 
     for (final s in upcomingSessions) {
-      final subject = getSubjectById(s.subjectId);
-      if (subject != null) {
-        await NotificationService.instance.scheduleSessionReminder(
-          session: s,
-          subjectName: subject.name,
-          advanceMinutes: settings.advanceReminderEnabled ? settings.advanceReminderMinutes : 0,
-        );
-      }
+      final subjectName = subjectMap[s.subjectId] ?? 'Class';
+      final room = s.room ?? roomMap[s.subjectId];
+      await NotificationService.instance.scheduleSessionReminder(
+        session: s,
+        subjectName: subjectName,
+        room: room,
+        advanceMinutes: settings.advanceReminderEnabled ? settings.advanceReminderMinutes : 0,
+      );
     }
+  }
+
+  Future<void> rescheduleAllNotifications(UserSettings settings) async {
+    await NotificationService.instance.cancelAll();
+    await syncAllUpcomingNotifications(settings);
   }
 }

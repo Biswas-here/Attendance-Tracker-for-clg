@@ -7,6 +7,7 @@ import '../../../core/services/csv_import_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../providers/attendance_provider.dart';
+import '../../../providers/settings_provider.dart';
 import '../../widgets/paper_card.dart';
 
 class CsvImportScreen extends StatefulWidget {
@@ -195,6 +196,10 @@ class _CsvImportScreenState extends State<CsvImportScreen> {
       await AppDatabase.instance.insertSessionsBatch(newSessions);
       // Reload provider state once at the end
       await attendance.loadData();
+      if (mounted) {
+        final settingsProv = context.read<SettingsProvider>();
+        await attendance.syncAllUpcomingNotifications(settingsProv.settings);
+      }
     }
 
     setState(() => _isImporting = false);

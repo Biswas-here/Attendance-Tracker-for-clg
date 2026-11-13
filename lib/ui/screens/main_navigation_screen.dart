@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/services/notification_service.dart';
 import '../../providers/attendance_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../widgets/floating_nav_dock.dart';
 import 'analytics/analytics_screen.dart';
 import 'ledger/ledger_screen.dart';
@@ -51,7 +52,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     if (!mounted) return;
     try {
       final attendance = context.read<AttendanceProvider>();
-      // Clear fired/active reminders, preserving unmarked class notifications
+      final settingsProv = context.read<SettingsProvider>();
+
+      // Dismiss already-started active reminders from panel, preserving upcoming alarms & end-of-class unmarked alarms
       await NotificationService.instance.clearActiveFiredReminders(
         allSessions: attendance.allSessions,
       );
@@ -62,6 +65,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         allSessions: attendance.allSessions,
         subjectNames: subjectNames,
       );
+
+      // Ensure upcoming 14 days of classes are scheduled in AlarmManager
+      await attendance.syncAllUpcomingNotifications(settingsProv.settings);
     } catch (e) {
       debugPrint('Background notification sync error: $e');
     }

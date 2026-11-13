@@ -24,6 +24,9 @@ void main() async {
     attendanceProvider.loadData(),
   ]);
 
+  // Sync upcoming notifications in AlarmManager
+  await attendanceProvider.syncAllUpcomingNotifications(settingsProvider.settings);
+
   runApp(
     MultiProvider(
       providers: [

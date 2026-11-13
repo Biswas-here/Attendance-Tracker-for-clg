@@ -119,17 +119,17 @@ All official APK builds are hosted directly under the **[Releases Tab](https://g
 
 | Version | Status | Release Date | Package Name | Compatible Android | Location |
 |---|---|---|---|---|---|
-| **v1.0.0 (Version 1.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v1.0.apk` | Android 5.0+ (API 21+) | [**Go to Releases ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
+| **v1.0.0 (Version 1.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v1.0.apk` (or `.zip`) | Android 5.0+ (API 21+) | [**Go to Releases ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
 
 ### 📲 How To Download (3 Easy Steps)
 
 ```
-Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  ──▶  Step 3: Tap Attendance-Tracker-v1.0.apk
+Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  ──▶  Step 3: Tap APK (or ZIP)
 ```
 
 1. Click on the **[Releases Tab](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** in the sidebar on GitHub.
 2. The **latest recommended version (v1.0.0)** is at the top. Under the top release, open the **Assets** section.
-3. Tap **`Attendance-Tracker-v1.0.apk`** to download it directly to your phone.
+3. Tap **`Attendance-Tracker-v1.0.apk`** (or **`Attendance-Tracker-v1.0.zip`**) to download it directly to your phone.
 4. If Android asks *"File might be harmful"*, tap **"Download anyway"** *(standard Android security notice for sideloaded APKs)*.
 5. Open your downloads folder, tap the APK, and select **Install**!
 

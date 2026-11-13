@@ -985,6 +985,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
       tapeColor: AppColors.kraftGold,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,

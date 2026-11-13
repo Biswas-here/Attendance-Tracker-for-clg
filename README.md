@@ -10,12 +10,39 @@
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
 [![Android](https://img.shields.io/badge/Platform-Android_5.0%2B-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
-[![Release](https://img.shields.io/badge/Release-Version_1.0-brightgreen)](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[📲 **Download Version 1 APK**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest/download/Attendance-Tracker-v1.0.apk) · [🌐 **GitHub Pages Site**](https://biswas-here.github.io/Attendance-Tracker-for-clg/) · [📦 **Releases Section**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)
+[📦 **Go to Releases (Download APK)**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) · [🌐 **GitHub Pages Site**](https://biswas-here.github.io/Attendance-Tracker-for-clg/)
 
 </div>
+
+---
+
+## 📦 Releases & Downloads
+
+All official APK builds are published under the repository's **[Releases](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** tab. The most recent, recommended release will always appear right at the top.
+
+### Available Versions
+
+| Version | Status | Release Date | Package Name | Compatible Android | Download Link |
+|---|---|---|---|---|---|
+| **v1.0.0 (Version 1.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v1.0.apk` | Android 5.0+ (API 21+) | [**Download v1.0 ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
+
+---
+
+### 📲 How To Download From The Releases Tab (Easy 3 Steps)
+
+If you are new to GitHub, here is the easiest way to download and install:
+
+```
+Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  ──▶  Step 3: Tap Attendance-Tracker-v1.0.apk
+```
+
+1. Click on the **[Releases Tab](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** (located on the right sidebar or via the link above).
+2. The **latest version is at the top**. Look at the bottom of the top release card for the section titled **Assets**.
+3. Tap **`Attendance-Tracker-v1.0.apk`** to download it to your phone.
+4. When prompted by your Android browser with *"File might be harmful"*, tap **"Download anyway"** *(standard Android security notice for sideloaded APKs)*.
+5. Open your downloads folder, tap the APK, and select **Install**!
 
 ---
 
@@ -112,42 +139,11 @@ Below are placeholders reserved for your app screenshots. Drop your image files 
 
 ---
 
-## 📲 How To Download & Install (Easy Guide)
-
-Even if you have never used GitHub before, installing the app takes less than a minute:
-
-```
-Step 1: Download APK  ──▶  Step 2: Tap "Download anyway"  ──▶  Step 3: Tap "Install"  ──▶  Step 4: Open & Enjoy!
-```
-
-### Direct Download Link
-👉 **[Download Attendance-Tracker-v1.0.apk (Version 1.0)](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest/download/Attendance-Tracker-v1.0.apk)**  
-*(File size: ~55 MB · Compatible with Android 5.0 Lollipop and above)*
-
-### Step-by-Step Instructions:
-1. Tap the download link above on your Android phone.
-2. If your browser displays a security warning saying *"File might be harmful"*, tap **"Download anyway"**.  
-   *(This is standard on Android whenever you download an APK directly outside Google Play Store).*
-3. Once the download finishes, tap the notification or open your **Files / Downloads** app and tap `Attendance-Tracker-v1.0.apk`.
-4. If Android asks for permission, enable **"Allow from this source"**, then tap **Install**.
-5. Tap **Open** to launch Attendance Tracker!
-
----
-
-## 📦 Releases Section
-
-All release builds are published under the repository's **Releases** tab:
-- **Latest Release:** [Attendance Ledger v1.0.0](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)
-- **Direct Asset:** `Attendance-Tracker-v1.0.apk`
-
----
-
 ## 🔒 Note on Making This Repository Private
 
 If you decide to switch this repository from **Public** to **Private**:
-- **Releases & Code:** Only you and people you invite as GitHub collaborators will be able to access the repo and download release files from GitHub.
-- **Direct Download Links:** Direct `github.com/.../releases/download/...` links will require signing into an authorized GitHub account.
-- **GitHub Pages:** On standard free GitHub accounts, GitHub Pages is supported on public repositories. If set to private, GitHub requires a GitHub Pro or Team plan to host Pages, or you can keep the code repository private and host the landing page separately.
+- **Releases & Code:** Only you and people you invite as GitHub collaborators under **Settings → Collaborators** will be able to access the repo and download release files.
+- **GitHub Pages:** On standard free GitHub accounts, GitHub Pages is supported on public repositories. If set to private, GitHub requires a GitHub Pro or Team plan to host Pages.
 - **Self-Contained Assets:** All screenshots, icons, and styling inside the `docs/` folder use relative file paths, so nothing breaks regardless of your repository's visibility status.
 
 ---

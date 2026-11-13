@@ -1,174 +1,195 @@
 <div align="center">
 
-<img src="docs/screenshots/icon.png" alt="Attendance Ledger Logo" width="100" height="100" style="border-radius:20px"/>
+<img src="docs/assets/logo.png" alt="Attendance Ledger Logo" width="105" height="105" style="border-radius:24px; box-shadow: 0 4px 16px rgba(0,0,0,0.15);"/>
 
-# 📋 Attendance Ledger
+# 📋 Attendance Tracker (Attendance Ledger)
 
-**A smart, beautiful Flutter app to track your college attendance — so you never miss the 75% cut-off again.**
+**A smart, offline-first college attendance companion that keeps you safely above the 75% threshold without the stress.**
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)](https://dart.dev)
-[![Android](https://img.shields.io/badge/Android-5.0%2B-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org)
+[![Android](https://img.shields.io/badge/Platform-Android_5.0%2B-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
+[![Release](https://img.shields.io/badge/Release-Version_1.0-brightgreen)](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-1.0.0-brightgreen)](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)
 
-[📥 Download APK](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest) · [🌐 GitHub Pages](https://biswas-here.github.io/Attendance-Tracker-for-clg) · [🐛 Report a Bug](https://github.com/Biswas-here/Attendance-Tracker-for-clg/issues) · [✨ Request a Feature](https://github.com/Biswas-here/Attendance-Tracker-for-clg/issues)
+[📲 **Download Version 1 APK**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest/download/Attendance-Tracker-v1.0.apk) · [🌐 **GitHub Pages Site**](https://biswas-here.github.io/Attendance-Tracker-for-clg/) · [📦 **Releases Section**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)
 
 </div>
 
 ---
 
-## 📸 Screenshots
+## 💡 The Idea Behind The App
+
+### The Problem
+In almost every college and university, students face a mandatory attendance requirement—most commonly **75% or 80%**. Dropping below this cut-off leads to serious consequences:
+- Debarment from semester-end examinations.
+- Loss of internal assessment marks.
+- Academic penalties, detention, and stressful follow-ups with department heads.
+
+Yet, keeping track manually is surprisingly chaotic:
+1. **The Math is Confusing:** Calculating how many classes you can skip before falling below 75% requires constant mental arithmetic after every single lecture and multi-hour lab.
+2. **Unreliable Existing Apps:** Most available attendance apps are bloated with invasive banner ads, demand unnecessary sign-ins, upload personal data to unknown cloud servers, or stop working entirely without internet access.
+3. **Missed Attendance:** Students frequently forget whether they were marked Present or Absent for a class that took place hours earlier, especially when apps fail to alert them when closed.
+
+### The Solution: Attendance Ledger
+**Attendance Ledger** is built with a simple philosophy: **distraction-free, completely private, and mathematically intelligent.**
+- **100% Offline-First:** Everything is stored safely on your phone using an embedded SQLite database. No account creation, no cloud syncing, zero trackers, and zero ads.
+- **Predictive Bunk Calculation:** Instead of just giving you a percentage, the app tells you in plain words: *"You can safely bunk the next 3 classes"* or *"Attend 2 consecutive classes to recover your 75% target."*
+- **Smart Background Alerts:** Interactive notifications pop up right as your class begins, complete with **[PRESENT]** and **[ABSENT]** buttons right on your lockscreen so you don't even have to open the app.
+
+---
+
+## 🛠️ Languages & Technologies Used
+
+Building Attendance Ledger required combining modern cross-platform UI frameworks with low-level native Android system APIs:
+
+| Language / Technology | Role in the App | Description |
+|---|---|---|
+| **Dart (Dart 3.x)** | Core Logic & Algorithms | Powers the entire application codebase, object-oriented data models, attendance prediction math, and asynchronous event streams with 100% null safety. |
+| **Flutter Framework** | UI & Rendering Engine | Google's UI toolkit that renders the warm, paper-crafted Material design with 60 FPS transitions, zero-flicker theme switching, and responsive widgets. |
+| **SQL & SQLite (`sqflite`)** | Local Database Storage | Fast, transactional embedded SQL database stored locally on the device for instant offline reads/writes of subjects, schedules, rules, and records. |
+| **Kotlin & Android Java** | Native System Layer | Bridges Android `AlarmManager`, `BroadcastReceivers`, and high-priority `NotificationChannels` for reliable background reminders across Android 5.0 to 14+. |
+| **C++ & CMake** | Engine Embedding | Handles low-level platform channels, graphics compilation, and the desktop runner execution pipeline. |
+| **HTML5 & Modern CSS3** | Documentation & Web | Powers the responsive, styled [GitHub Pages](https://biswas-here.github.io/Attendance-Tracker-for-clg/) landing page and user documentation. |
+
+---
+
+## ✨ Features Breakdown
+
+### 1. 🏠 Live "Class In Session" Dashboard
+- Dynamically discovers whatever lecture or lab is active right now based on real-time clock.
+- Displays faculty name, room number, and time range in a prominent hero card.
+- One-tap toggle allows switching between Present and Absent in seconds.
+
+### 2. 📊 3D Comparison Charts & Bunk Safety
+- Beautiful 3D vertical pillar comparison chart across all registered subjects.
+- Smart auto-fitting for subjects with long names to keep labels readable and elegant.
+- Detailed breakdown per subject: Total sessions held, classes attended, classes absent, and exact margin above/below target.
+
+### 3. 🔔 Reliable Background Notifications
+- **Advance Reminder:** Configurable early chime (5, 10, 15, or 30 minutes before class) so you have time to reach the classroom.
+- **Class Start Alert:** Pops up at class start time with interactive **[PRESENT]** and **[ABSENT]** buttons on your lockscreen.
+- **Post-Class Unmarked Reminder:** If you forget to mark, Android's `AlarmManager` alerts you once the class ends so no lecture slips through the cracks.
+- **Intelligent Auto-Dismiss:** Entering the app automatically removes already-started notifications from your notification shade without disturbing upcoming alarms.
+
+### 4. 📅 1-Tap CSV Timetable Import
+- Import your entire semester timetable in 5 seconds from an Excel/CSV spreadsheet.
+- Automatically parses subject codes, titles, faculty names, and room numbers.
+- Generates recurring weekly schedules across 4 to 52 weeks automatically.
+
+### 5. ⚙️ Smart Holiday & Profile System
+- Configurable Saturday off pattern (e.g., 2nd & 4th Saturdays, 1st & 3rd, or all Saturdays).
+- Custom holiday manager to input college-specific festivals or institutional holidays.
+- Semester milestone tracker with a celebratory screen upon completion of final exams.
+- Persistent profile picture and customizable default attendance target (default 75%).
+
+### 6. 🌙 Zero-Flicker Light & Dark Themes
+- Beautiful paper-textured light theme and OLED-friendly dark mode.
+- Caches theme and settings prior to the first frame render to eliminate startup flicker.
+
+---
+
+## 📸 App Screenshots
+
+Below are placeholders reserved for your app screenshots. Drop your image files into `docs/screenshots/` and update these links:
 
 <div align="center">
 
-| Attendance Ledger | Analytics | Subjects | Settings |
-|:-:|:-:|:-:|:-:|
-| <img src="docs/screenshots/ledger.jpg" width="200"/> | <img src="docs/screenshots/analytics.jpg" width="200"/> | <img src="docs/screenshots/subjects.jpg" width="200"/> | <img src="docs/screenshots/settings.jpg" width="200"/> |
+| 1. Ledger & Schedule | 2. Class In Session | 3. Analytics & Bunk Calc |
+|:---:|:---:|:---:|
+| <img src="docs/assets/placeholder.svg" width="220" alt="Ledger Screenshot Placeholder"/> | <img src="docs/assets/placeholder.svg" width="220" alt="Active Class Placeholder"/> | <img src="docs/assets/placeholder.svg" width="220" alt="Analytics Screenshot Placeholder"/> |
+| *Today's Schedule & Attendance* | *Live Ongoing Class with Quick Actions* | *3D Subject Chart & Predictive Advice* |
+
+<br/>
+
+| 4. Timetable & CSV Import | 5. Settings & Profile |
+|:---:|:---:|
+| <img src="docs/assets/placeholder.svg" width="220" alt="Timetable Placeholder"/> | <img src="docs/assets/placeholder.svg" width="220" alt="Settings Screenshot Placeholder"/> |
+| *Weekly Timetable & Spreadsheet Import* | *Notification Preferences & Dark Mode* |
 
 </div>
 
 ---
 
-## ✨ Features
+## 📲 How To Download & Install (Easy Guide)
 
-### 🏠 Smart Home Dashboard
-- **Live "Class in Session" card** — prominently shows your current class with teacher, room, and timing at a glance
-- **One-tap P / A marking** — mark Present or Absent right from the schedule; swipe to switch
-- **Semester congratulations** — a personalized end-of-semester message once all classes are done
-- **Daily schedule navigation** — browse any week's schedule with forward/back arrows
+Even if you have never used GitHub before, installing the app takes less than a minute:
 
-### 📊 Analytics Tab
-- **Overall attendance ring** — colour-coded (green/yellow/red) gauge against your target percentage
-- **Subject-by-subject comparison** — 3D vertical bar chart with smart text fitting for long subject names
-- **Predictive advice** — tells you exactly how many classes you can skip or must attend to stay on track
+```
+Step 1: Download APK  ──▶  Step 2: Tap "Download anyway"  ──▶  Step 3: Tap "Install"  ──▶  Step 4: Open & Enjoy!
+```
 
-### 📚 Subjects Management
-- Add, edit, and delete subjects with **name, teacher, room number, and attendance target**
-- **CSV import** — bulk-import your timetable from a spreadsheet (teacher/faculty & room pulled automatically)
-- Subject icons auto-assigned based on name
+### Direct Download Link
+👉 **[Download Attendance-Tracker-v1.0.apk (Version 1.0)](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest/download/Attendance-Tracker-v1.0.apk)**  
+*(File size: ~55 MB · Compatible with Android 5.0 Lollipop and above)*
 
-### 📅 Timetable
-- Full weekly timetable view
-- Supports labs, lectures, and back-to-back sessions
-
-### 🔔 Smart Notifications
-- **Advance reminder** (configurable, off by default) — notifies you before a class starts
-- **Unmarked class alert** — notified if you haven't marked attendance after a class ends
-- Notifications appear in the **notification panel when the app is closed**
-- Notifications auto-dismiss when you open the app; a final prompt shown once after class ends
-
-### 👤 Profile & Personalisation
-- Profile photo (persists across app restarts)
-- Student name and college name
-- **Light / Dark mode** — system-aware with seamless zero-flash transition on startup
-- Semester start & end dates
-
-### 🛡️ Reliability
-- Local SQLite database — **works 100% offline**, no account needed
-- Smooth scroll & animations — no jitter, no lag
-- Room number and teacher changes sync instantly across Ledger schedule
+### Step-by-Step Instructions:
+1. Tap the download link above on your Android phone.
+2. If your browser displays a security warning saying *"File might be harmful"*, tap **"Download anyway"**.  
+   *(This is standard on Android whenever you download an APK directly outside Google Play Store).*
+3. Once the download finishes, tap the notification or open your **Files / Downloads** app and tap `Attendance-Tracker-v1.0.apk`.
+4. If Android asks for permission, enable **"Allow from this source"**, then tap **Install**.
+5. Tap **Open** to launch Attendance Tracker!
 
 ---
 
-## 🚀 Getting Started
+## 📦 Releases Section
 
-### Prerequisites
+All release builds are published under the repository's **Releases** tab:
+- **Latest Release:** [Attendance Ledger v1.0.0](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)
+- **Direct Asset:** `Attendance-Tracker-v1.0.apk`
 
-| Tool | Version |
-|------|---------|
-| Flutter SDK | ≥ 3.0.0 |
-| Dart SDK | ≥ 3.0.0 |
-| Android SDK | API 21+ |
-| Java | 17 |
+---
 
-### Build from Source
+## 🔒 Note on Making This Repository Private
 
+If you decide to switch this repository from **Public** to **Private**:
+- **Releases & Code:** Only you and people you invite as GitHub collaborators will be able to access the repo and download release files from GitHub.
+- **Direct Download Links:** Direct `github.com/.../releases/download/...` links will require signing into an authorized GitHub account.
+- **GitHub Pages:** On standard free GitHub accounts, GitHub Pages is supported on public repositories. If set to private, GitHub requires a GitHub Pro or Team plan to host Pages, or you can keep the code repository private and host the landing page separately.
+- **Self-Contained Assets:** All screenshots, icons, and styling inside the `docs/` folder use relative file paths, so nothing breaks regardless of your repository's visibility status.
+
+---
+
+## 🚀 Building From Source
+
+If you want to compile the project yourself:
+
+### Requirements
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) (version 3.12 or newer)
+- [Android Studio](https://developer.android.com/studio) with Android SDK API 21+
+- Java JDK 17
+
+### Steps
 ```bash
-# 1. Clone the repo
+# 1. Clone your repository
 git clone https://github.com/Biswas-here/Attendance-Tracker-for-clg.git
 cd Attendance-Tracker-for-clg
 
-# 2. Install dependencies
+# 2. Get dependencies
 flutter pub get
 
-# 3. Run on a connected device / emulator
+# 3. Run on a connected Android device or emulator
 flutter run
 
-# 4. Build a release APK
+# 4. Build the standalone Release APK
 flutter build apk --release
 ```
-
-> **Note:** The release APK in the [Releases](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) page is signed with a debug key — suitable for testing. For production use, set up your own signing keystore.
-
----
-
-## 📦 Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | Flutter 3.x |
-| **Language** | Dart 3.x |
-| **Database** | SQLite via `sqflite` |
-| **State Management** | `provider` |
-| **Charts** | `fl_chart` |
-| **Notifications** | `flutter_local_notifications` + `timezone` |
-| **File Import** | `file_picker` |
-| **Storage** | `path_provider`, `shared_preferences` |
-| **Sharing** | `share_plus` |
-
----
-
-## 📁 Project Structure
-
-```
-lib/
-├── main.dart                  # App entry point, theme & data init
-├── models/                    # Data models (Subject, ClassSession, AttendanceRecord)
-├── providers/                 # Provider state management
-├── screens/                   # UI screens (Ledger, Subjects, Analytics, Settings)
-├── widgets/                   # Reusable UI components
-├── services/                  # Notification service, CSV parser
-└── utils/                     # Helpers & calculations
-```
-
----
-
-## 📲 Download
-
-Head to the [**Releases**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) page and download the latest APK.
-
-> ⚠️ This is a **debug-signed build** intended for personal testing. Enable "Install from unknown sources" in your Android settings before installing.
-
----
-
-## 🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feat/amazing-feature`
-3. Commit your changes: `git commit -m 'feat: add amazing feature'`
-4. Push to the branch: `git push origin feat/amazing-feature`
-5. Open a Pull Request
+The compiled APK will be output to:  
+`build/app/outputs/flutter-apk/app-release.apk`
 
 ---
 
 ## 📄 License
 
-Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
-
----
-
-## 👨‍💻 Author
-
-**Snehasish Biswas**  
-GitHub: [@Biswas-here](https://github.com/Biswas-here)
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
 
-Made with ❤️ and Flutter · © 2026 Snehasish Biswas
+Crafted with ❤️ by **Snehasish Biswas**  
+GitHub: [@Biswas-here](https://github.com/Biswas-here)
 
 </div>

@@ -3,283 +3,625 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Attendance Ledger — Smart college attendance tracker built with Flutter. Never miss the 75% cut-off again." />
-  <meta name="theme-color" content="#2D6A4F" />
+  <meta name="description" content="Attendance Ledger — Modern, offline-first college attendance tracker built with Flutter, Dart, and SQLite. Track classes, calculate bunk safety, and hit your 75% target." />
+  <meta name="theme-color" content="#1B4332" />
 
-  <!-- Open Graph / Social Preview -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://biswas-here.github.io/Attendance-Tracker-for-clg/" />
   <meta property="og:title" content="Attendance Ledger — Smart College Attendance Tracker" />
-  <meta property="og:description" content="Track your college attendance beautifully with smart notifications, analytics, and CSV import. Built with Flutter." />
-  <meta property="og:image" content="screenshots/ledger.jpg" />
+  <meta property="og:description" content="Never drop below 75% attendance again. Offline-first, smart lockscreen alerts, predictive bunk calculation, and automated CSV schedule imports." />
+  <meta property="og:image" content="assets/logo.png" />
 
-  <title>Attendance Ledger</title>
+  <title>Attendance Ledger — Smart College Attendance & Timetable Manager</title>
 
   <style>
     :root {
-      --green: #2D6A4F;
-      --green-light: #40916C;
-      --accent: #74C69D;
+      --primary: #1B4332;
+      --primary-hover: #2D6A4F;
+      --accent: #52B788;
+      --accent-soft: #D8F3DC;
       --bg: #F8FAF9;
-      --card: #FFFFFF;
-      --text: #1B2F25;
-      --muted: #6C757D;
-      --border: #E0EDE7;
+      --surface: #FFFFFF;
+      --text-main: #132A13;
+      --text-muted: #5C6F68;
+      --border: #E2ECE6;
+      --border-dark: #C9DCD2;
+      --shadow-sm: 0 2px 8px rgba(19, 42, 19, 0.05);
+      --shadow-md: 0 8px 24px rgba(19, 42, 19, 0.08);
+      --shadow-lg: 0 16px 40px rgba(19, 42, 19, 0.12);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 24px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
+      color: var(--text-main);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ---- NAV ---- */
+    /* ---- NAVIGATION ---- */
     nav {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(248,250,249,0.92);
-      backdrop-filter: blur(12px);
+      position: sticky; top: 0; z-index: 1000;
+      background: rgba(248, 250, 249, 0.94);
+      backdrop-filter: blur(14px);
       border-bottom: 1px solid var(--border);
-      padding: 0 2rem;
+      padding: 0.8rem 2rem;
       display: flex; align-items: center; justify-content: space-between;
-      height: 60px;
     }
-    .nav-logo { font-size: 1.1rem; font-weight: 700; color: var(--green); text-decoration: none; }
-    .nav-links { display: flex; gap: 1.5rem; list-style: none; }
-    .nav-links a { text-decoration: none; color: var(--muted); font-size: 0.9rem; transition: color .2s; }
-    .nav-links a:hover { color: var(--green); }
+    .brand {
+      display: flex; align-items: center; gap: 0.75rem;
+      text-decoration: none; color: var(--primary); font-weight: 800; font-size: 1.15rem;
+    }
+    .brand img {
+      width: 36px; height: 36px; border-radius: 9px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .nav-links { display: flex; gap: 1.5rem; list-style: none; align-items: center; }
+    .nav-links a {
+      text-decoration: none; color: var(--text-muted); font-size: 0.92rem; font-weight: 600;
+      transition: color 0.2s ease;
+    }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-btn {
+      background: var(--primary); color: white !important;
+      padding: 0.5rem 1.1rem; border-radius: var(--radius-sm);
+      transition: background 0.2s, transform 0.15s;
+    }
+    .nav-btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
     /* ---- HERO ---- */
     .hero {
-      display: flex; flex-direction: column; align-items: center;
+      padding: 5.5rem 1.5rem 4rem;
       text-align: center;
-      padding: 5rem 1.5rem 4rem;
-      background: linear-gradient(160deg, #EAF7EF 0%, #F8FAF9 60%);
-    }
-    .badge {
-      display: inline-block;
-      background: #D8F3DC; color: var(--green);
-      font-size: 0.75rem; font-weight: 600; letter-spacing: .05em;
-      padding: .3rem .9rem; border-radius: 999px; margin-bottom: 1.2rem;
-    }
-    .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; color: var(--green); }
-    .hero p { font-size: 1.1rem; color: var(--muted); max-width: 560px; margin: 1rem auto 2rem; }
-
-    .btn-row { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
-    .btn {
-      display: inline-flex; align-items: center; gap: .5rem;
-      padding: .75rem 1.6rem; border-radius: 10px; font-size: .95rem; font-weight: 600;
-      text-decoration: none; transition: transform .15s, box-shadow .15s;
-    }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
-    .btn-primary { background: var(--green); color: white; }
-    .btn-secondary { background: white; color: var(--green); border: 2px solid var(--green); }
-
-    /* ---- SCREENSHOTS CAROUSEL ---- */
-    .screenshots {
-      padding: 4rem 1.5rem;
-      background: white;
-      text-align: center;
-    }
-    .screenshots h2 { font-size: 1.8rem; color: var(--green); margin-bottom: 2.5rem; }
-    .screenshot-grid {
-      display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;
-    }
-    .screenshot-card {
-      border-radius: 24px; overflow: hidden;
-      box-shadow: 0 8px 30px rgba(0,0,0,.1);
-      border: 2px solid var(--border);
-      transition: transform .2s, box-shadow .2s;
-      width: 180px;
-    }
-    .screenshot-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(0,0,0,.15); }
-    .screenshot-card img { width: 100%; display: block; }
-    .screenshot-label { font-size: .8rem; color: var(--muted); padding: .5rem; }
-
-    /* ---- FEATURES ---- */
-    .features { padding: 5rem 1.5rem; background: var(--bg); }
-    .features h2 { text-align: center; font-size: 1.8rem; color: var(--green); margin-bottom: 3rem; }
-    .features-grid {
-      display: grid; gap: 1.5rem;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      background: radial-gradient(circle at 50% 20%, #E9F6EE 0%, var(--bg) 70%);
       max-width: 1000px; margin: 0 auto;
     }
-    .feature-card {
-      background: white; border-radius: 16px; padding: 1.6rem;
+    .pill {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent-soft); color: var(--primary);
+      padding: 0.4rem 1rem; border-radius: 999px;
+      font-size: 0.82rem; font-weight: 700; letter-spacing: 0.03em;
+      margin-bottom: 1.5rem;
+    }
+    .hero-logo {
+      width: 96px; height: 96px; border-radius: 22px;
+      box-shadow: var(--shadow-md); margin-bottom: 1.5rem;
+      border: 3px solid white;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+      font-weight: 900; line-height: 1.18; color: var(--primary);
+      letter-spacing: -0.02em; margin-bottom: 1.25rem;
+    }
+    .hero p {
+      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+      color: var(--text-muted); max-width: 680px; margin: 0 auto 2.5rem;
+    }
+    .cta-group {
+      display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.6rem;
+      padding: 0.85rem 1.8rem; border-radius: var(--radius-sm);
+      font-size: 1rem; font-weight: 700; text-decoration: none;
+      transition: all 0.2s ease; cursor: pointer;
+    }
+    .btn-main {
+      background: var(--primary); color: white;
+      box-shadow: 0 4px 14px rgba(27, 67, 50, 0.25);
+    }
+    .btn-main:hover {
+      background: var(--primary-hover); transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(27, 67, 50, 0.35);
+    }
+    .btn-outline {
+      background: var(--surface); color: var(--primary);
+      border: 2px solid var(--border-dark);
+    }
+    .btn-outline:hover {
+      border-color: var(--primary); background: #FAFDFB; transform: translateY(-2px);
+    }
+
+    /* ---- SECTIONS SHARED ---- */
+    section { padding: 4.5rem 1.5rem; }
+    .container { max-width: 1040px; margin: 0 auto; }
+    .section-title {
+      text-align: center; margin-bottom: 3.2rem;
+    }
+    .section-title h2 {
+      font-size: 2.1rem; font-weight: 800; color: var(--primary);
+      letter-spacing: -0.01em; margin-bottom: 0.6rem;
+    }
+    .section-title p {
+      color: var(--text-muted); font-size: 1.05rem; max-width: 620px; margin: 0 auto;
+    }
+
+    /* ---- IDEA / PROBLEM & SOLUTION ---- */
+    .idea-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;
+    }
+    .idea-card {
+      background: var(--surface); border-radius: var(--radius-md);
+      padding: 2.2rem; border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+    .idea-card.problem { border-left: 6px solid #E63946; }
+    .idea-card.solution { border-left: 6px solid var(--accent); }
+    .idea-card h3 {
+      font-size: 1.35rem; font-weight: 800; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .idea-card p {
+      color: var(--text-muted); font-size: 0.97rem; line-height: 1.7; margin-bottom: 1rem;
+    }
+    .idea-card ul {
+      list-style: none; padding: 0; margin-top: 1rem;
+    }
+    .idea-card ul li {
+      position: relative; padding-left: 1.5rem; margin-bottom: 0.6rem;
+      font-size: 0.93rem; color: var(--text-main); font-weight: 500;
+    }
+    .idea-card.problem ul li::before {
+      content: "✕"; position: absolute; left: 0; color: #E63946; font-weight: 900;
+    }
+    .idea-card.solution ul li::before {
+      content: "✓"; position: absolute; left: 0; color: var(--accent); font-weight: 900;
+    }
+
+    /* ---- TECH STACK / LANGUAGES ---- */
+    .tech-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;
+    }
+    .tech-card {
+      background: var(--surface); border-radius: var(--radius-md); padding: 1.8rem;
+      border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+      text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .tech-card:hover {
+      transform: translateY(-4px); box-shadow: var(--shadow-md);
+    }
+    .tech-icon { font-size: 2.2rem; margin-bottom: 0.8rem; }
+    .tech-card h3 { font-size: 1.15rem; font-weight: 800; color: var(--primary); margin-bottom: 0.4rem; }
+    .tech-role {
+      font-size: 0.78rem; text-transform: uppercase; font-weight: 700;
+      letter-spacing: 0.05em; color: var(--accent); margin-bottom: 0.7rem;
+    }
+    .tech-card p { font-size: 0.88rem; color: var(--text-muted); line-height: 1.55; }
+
+    /* ---- FEATURES ---- */
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.8rem;
+    }
+    .feature-box {
+      background: var(--surface); border-radius: var(--radius-md); padding: 1.8rem;
+      border: 1px solid var(--border); box-shadow: var(--shadow-sm);
+      display: flex; gap: 1.2rem; align-items: flex-start;
+      transition: transform 0.2s;
+    }
+    .feature-box:hover { transform: translateY(-3px); }
+    .feature-icon-badge {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: var(--accent-soft); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem; flex-shrink: 0;
+    }
+    .feature-content h3 {
+      font-size: 1.1rem; font-weight: 800; margin-bottom: 0.4rem; color: var(--primary);
+    }
+    .feature-content p {
+      font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;
+    }
+
+    /* ---- PLACEHOLDER SCREENSHOTS ---- */
+    .screenshots-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.6rem;
+    }
+    .screenshot-slot {
+      background: var(--surface); border-radius: var(--radius-lg);
+      border: 2px dashed var(--border-dark); padding: 1rem;
+      text-align: center; transition: all 0.2s ease;
+      box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+    }
+    .screenshot-slot:hover {
+      border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-md);
+    }
+    .placeholder-art {
+      width: 100%; aspect-ratio: 9/16; border-radius: 16px;
+      background: #F2F7F4; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 1.5rem;
       border: 1px solid var(--border);
-      box-shadow: 0 2px 12px rgba(0,0,0,.04);
-      transition: transform .2s, box-shadow .2s;
     }
-    .feature-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-    .feature-icon { font-size: 2rem; margin-bottom: .8rem; }
-    .feature-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: .4rem; color: var(--text); }
-    .feature-card p { font-size: .88rem; color: var(--muted); }
-
-    /* ---- TECH STACK ---- */
-    .tech { padding: 4rem 1.5rem; background: white; text-align: center; }
-    .tech h2 { font-size: 1.8rem; color: var(--green); margin-bottom: 2rem; }
-    .badges { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; }
-    .tech-badge {
-      background: var(--bg); border: 1px solid var(--border);
-      border-radius: 8px; padding: .5rem 1rem;
-      font-size: .85rem; font-weight: 600; color: var(--green);
+    .placeholder-art svg { width: 56px; height: 56px; margin-bottom: 1rem; opacity: 0.6; }
+    .placeholder-label {
+      font-size: 0.88rem; font-weight: 700; color: var(--primary); margin-bottom: 0.3rem;
+    }
+    .placeholder-sub {
+      font-size: 0.75rem; color: var(--text-muted);
+    }
+    .slot-caption {
+      margin-top: 0.9rem; font-size: 0.9rem; font-weight: 700; color: var(--text-main);
     }
 
-    /* ---- DOWNLOAD CTA ---- */
-    .cta {
-      padding: 5rem 1.5rem;
-      background: linear-gradient(135deg, var(--green) 0%, var(--green-light) 100%);
-      text-align: center; color: white;
+    /* ---- DOWNLOAD & INSTALL STEP-BY-STEP ---- */
+    .install-box {
+      background: linear-gradient(145deg, #1B4332 0%, #2D6A4F 100%);
+      color: white; border-radius: var(--radius-lg); padding: 3.5rem 2.5rem;
+      box-shadow: var(--shadow-lg); text-align: center;
     }
-    .cta h2 { font-size: 2rem; font-weight: 800; margin-bottom: .8rem; }
-    .cta p { font-size: 1.05rem; opacity: .85; margin-bottom: 2rem; max-width: 480px; margin-left: auto; margin-right: auto; }
-    .cta .btn-primary { background: white; color: var(--green); }
-    .cta .btn-secondary { background: transparent; color: white; border-color: rgba(255,255,255,.6); }
+    .install-box h2 {
+      font-size: 2.2rem; font-weight: 900; margin-bottom: 0.8rem;
+    }
+    .install-box p.lead {
+      font-size: 1.1rem; opacity: 0.9; max-width: 600px; margin: 0 auto 2.5rem;
+    }
+    .steps-row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem; text-align: left; margin-bottom: 3rem;
+    }
+    .step-card {
+      background: rgba(255, 255, 255, 0.08); border-radius: var(--radius-md);
+      padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+    }
+    .step-num {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--accent); color: var(--primary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 0.95rem; margin-bottom: 0.8rem;
+    }
+    .step-card h4 { font-size: 1rem; font-weight: 800; margin-bottom: 0.4rem; }
+    .step-card p { font-size: 0.84rem; opacity: 0.82; line-height: 1.5; }
+    .apk-download-btn {
+      background: white; color: var(--primary) !important;
+      font-size: 1.15rem; padding: 1.1rem 2.4rem; border-radius: var(--radius-sm);
+      display: inline-flex; align-items: center; gap: 0.8rem; font-weight: 800;
+      text-decoration: none; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      transition: transform 0.2s, background 0.2s;
+    }
+    .apk-download-btn:hover {
+      background: #F2FAF5; transform: scale(1.03);
+    }
+    .apk-meta {
+      margin-top: 1rem; font-size: 0.85rem; opacity: 0.75;
+    }
+
+    /* ---- REPO VISIBILITY NOTE ---- */
+    .note-card {
+      background: #FFFBEB; border-left: 5px solid #F59E0B;
+      padding: 1.2rem 1.6rem; border-radius: var(--radius-sm);
+      margin-top: 2rem; text-align: left; color: #78350F;
+      font-size: 0.88rem; line-height: 1.6;
+    }
+    .note-card strong { color: #B45309; }
 
     /* ---- FOOTER ---- */
     footer {
-      text-align: center; padding: 2rem 1.5rem;
-      background: var(--text); color: rgba(255,255,255,.5);
-      font-size: .85rem;
+      background: #0E1F17; color: rgba(255, 255, 255, 0.6);
+      text-align: center; padding: 3rem 1.5rem; font-size: 0.88rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
     }
-    footer a { color: var(--accent); text-decoration: none; }
+    footer a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    footer a:hover { text-decoration: underline; }
 
-    @media (max-width: 600px) {
-      nav { padding: 0 1rem; }
-      .nav-links { gap: 1rem; }
+    @media (max-width: 768px) {
+      .idea-grid { grid-template-columns: 1fr; }
+      nav { padding: 0.8rem 1rem; }
+      .nav-links { display: none; }
+      .install-box { padding: 2.2rem 1.2rem; }
     }
   </style>
 </head>
 <body>
 
-<!-- NAV -->
-<nav>
-  <a class="nav-logo" href="#">📋 Attendance Ledger</a>
-  <ul class="nav-links">
-    <li><a href="#features">Features</a></li>
-    <li><a href="#screenshots">Screenshots</a></li>
-    <li><a href="https://github.com/Biswas-here/Attendance-Tracker-for-clg" target="_blank">GitHub</a></li>
-  </ul>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <span class="badge">✨ Version 1.0 · Flutter · Android</span>
-  <h1>Your College Attendance,<br/>Under Control.</h1>
-  <p>Track every class, get smart notifications, and always know exactly how many you can skip — without falling below 75%.</p>
-  <div class="btn-row">
-    <a class="btn btn-primary" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest">
-      📥 Download APK
+  <!-- NAVIGATION -->
+  <nav>
+    <a class="brand" href="#">
+      <img src="assets/logo.png" alt="Attendance Ledger Logo" onerror="this.src='screenshots/icon.png'"/>
+      <span>Attendance Ledger</span>
     </a>
-    <a class="btn btn-secondary" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg">
-      ⭐ View on GitHub
-    </a>
-  </div>
-</section>
+    <ul class="nav-links">
+      <li><a href="#about">The Idea</a></li>
+      <li><a href="#tech">Languages & Tech</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#screenshots">Screenshots</a></li>
+      <li><a class="nav-btn" href="#download">📥 Download App</a></li>
+    </ul>
+  </nav>
 
-<!-- SCREENSHOTS -->
-<section class="screenshots" id="screenshots">
-  <h2>📸 App Screenshots</h2>
-  <div class="screenshot-grid">
-    <div class="screenshot-card">
-      <img src="screenshots/ledger.jpg" alt="Ledger Tab" onerror="this.style.display='none'" />
-      <div class="screenshot-label">📚 Ledger</div>
+  <!-- HERO SECTION -->
+  <header class="hero">
+    <img class="hero-logo" src="assets/logo.png" alt="App Logo" onerror="this.src='screenshots/icon.png'"/>
+    <br/>
+    <div class="pill">✨ Version 1.0 · Android Release · 100% Offline</div>
+    <h1>Never Fall Below The 75% Attendance Cut-Off Again.</h1>
+    <p>A smart, beautiful college attendance tracker built with Flutter and SQLite. Track classes with one tap, know exactly how many you can safely bunk, and get interactive lockscreen reminders.</p>
+    <div class="cta-group">
+      <a class="btn btn-main" href="#download">📥 Download Attendance Tracker v1.0</a>
+      <a class="btn btn-outline" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg" target="_blank">⭐ View on GitHub</a>
     </div>
-    <div class="screenshot-card">
-      <img src="screenshots/analytics.jpg" alt="Analytics Tab" onerror="this.style.display='none'" />
-      <div class="screenshot-label">📊 Analytics</div>
-    </div>
-    <div class="screenshot-card">
-      <img src="screenshots/subjects.jpg" alt="Subjects Tab" onerror="this.style.display='none'" />
-      <div class="screenshot-label">📋 Subjects</div>
-    </div>
-    <div class="screenshot-card">
-      <img src="screenshots/settings.jpg" alt="Settings" onerror="this.style.display='none'" />
-      <div class="screenshot-label">⚙️ Settings</div>
-    </div>
-  </div>
-</section>
+  </header>
 
-<!-- FEATURES -->
-<section class="features" id="features">
-  <h2>✨ Features</h2>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">🏠</div>
-      <h3>Live Class Card</h3>
-      <p>See your current class front and centre — teacher, room, and timings at one glance.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">✅</div>
-      <h3>One-Tap Marking</h3>
-      <p>Mark Present or Absent instantly. Swipe to switch. No extra taps.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔔</div>
-      <h3>Smart Notifications</h3>
-      <p>Advance class reminders and unmarked-attendance alerts — even when the app is closed.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h3>Powerful Analytics</h3>
-      <p>Subject-wise attendance bar chart, predictive advice, and colour-coded attendance ring.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📄</div>
-      <h3>CSV Import</h3>
-      <p>Import your full timetable from a spreadsheet in seconds — teacher and room auto-filled.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🌙</div>
-      <h3>Light & Dark Mode</h3>
-      <p>System-aware theming with zero flash on startup. Looks great in both modes.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📴</div>
-      <h3>Fully Offline</h3>
-      <p>Local SQLite database. No account, no cloud, no internet required.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🎓</div>
-      <h3>Semester Tracker</h3>
-      <p>Set semester start/end dates. Get a personalised congratulations at the end.</p>
-    </div>
-  </div>
-</section>
+  <!-- SECTION 1: THE IDEA BEHIND THE APP -->
+  <section id="about">
+    <div class="container">
+      <div class="section-title">
+        <h2>💡 The Idea Behind The App</h2>
+        <p>Why we built Attendance Ledger and how it solves real daily college challenges.</p>
+      </div>
 
-<!-- TECH STACK -->
-<section class="tech">
-  <h2>🛠️ Built With</h2>
-  <div class="badges">
-    <span class="tech-badge">Flutter 3.x</span>
-    <span class="tech-badge">Dart 3.x</span>
-    <span class="tech-badge">SQLite (sqflite)</span>
-    <span class="tech-badge">Provider</span>
-    <span class="tech-badge">fl_chart</span>
-    <span class="tech-badge">flutter_local_notifications</span>
-    <span class="tech-badge">file_picker</span>
-    <span class="tech-badge">path_provider</span>
-    <span class="tech-badge">shared_preferences</span>
-  </div>
-</section>
+      <div class="idea-grid">
+        <div class="idea-card problem">
+          <h3>The College Reality</h3>
+          <p>Most universities enforce a strict <strong>75% or 80% mandatory attendance threshold</strong>. Falling below this cut-off means detention, exam hall ticket disqualification, or academic penalties.</p>
+          <p>Yet keeping track manually is a nightmare:</p>
+          <ul>
+            <li>Calculating percentages manually after every bunked class is tedious and error-prone.</li>
+            <li>Lab sessions count for multiple hours, throwing off simple tally marks.</li>
+            <li>Existing store apps are loaded with ads, require cloud logins, or fail completely when offline.</li>
+            <li>Forgetting to mark attendance because notifications don't fire when the app is closed.</li>
+          </ul>
+        </div>
 
-<!-- DOWNLOAD CTA -->
-<section class="cta">
-  <h2>Ready to never bunk carelessly again?</h2>
-  <p>Download the APK and install it directly. Free, offline, no sign-up needed.</p>
-  <div class="btn-row">
-    <a class="btn btn-primary" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest">📥 Download APK</a>
-    <a class="btn btn-secondary" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg">View Source on GitHub</a>
-  </div>
-</section>
+        <div class="idea-card solution">
+          <h3>The Smart Solution</h3>
+          <p><strong>Attendance Ledger</strong> was created as a distraction-free, 100% private, offline-first companion tailored specifically for college students.</p>
+          <p>It acts as your personal attendance assistant:</p>
+          <ul>
+            <li><strong>Predictive Intelligence:</strong> Tells you exactly how many consecutive classes you can safely skip or must attend to hit your target.</li>
+            <li><strong>Live Class In Session:</strong> Prominently highlights your current class with teacher name, room, and timings.</li>
+            <li><strong>Smart Lockscreen Actions:</strong> Mark Present or Absent directly from Android notification buttons without even opening the app.</li>
+            <li><strong>Bulk CSV Import:</strong> Import your entire college timetable in 5 seconds without entering classes one by one.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<!-- FOOTER -->
-<footer>
-  <p>Made with ❤️ and Flutter by <a href="https://github.com/Biswas-here" target="_blank">Snehasish Biswas</a> · © 2026 · <a href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/blob/main/LICENSE" target="_blank">MIT License</a></p>
-</footer>
+  <!-- SECTION 2: LANGUAGES & TECHNOLOGIES USED -->
+  <section id="tech" style="background: #F2F7F4;">
+    <div class="container">
+      <div class="section-title">
+        <h2>🛠️ Languages & Tech Stack</h2>
+        <p>The modern languages, frameworks, and low-level system APIs powering Attendance Ledger.</p>
+      </div>
+
+      <div class="tech-grid">
+        <div class="tech-card">
+          <div class="tech-icon">🎯</div>
+          <h3>Dart</h3>
+          <div class="tech-role">Core Programming Language</div>
+          <p>Type-safe Dart 3 powers all application models, business calculations, attendance algorithms, and asynchronous streams with zero runtime null-errors.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon">📱</div>
+          <h3>Flutter</h3>
+          <div class="tech-role">UI & Animation Engine</div>
+          <p>Google's cross-platform framework rendering a paper-crafted aesthetic with 60 FPS smooth animations, responsive grids, and zero-flicker light/dark themes.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon">💾</div>
+          <h3>SQLite & SQL</h3>
+          <div class="tech-role">Local Database Engine</div>
+          <p>High-performance embedded SQLite database (`sqflite`). Executes indexed local queries on-device with zero reliance on cloud or internet servers.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon">🤖</div>
+          <h3>Kotlin & Java</h3>
+          <div class="tech-role">Android Native Layer</div>
+          <p>Native Android integration for Android AlarmManager, BroadcastReceivers, NotificationChannels (API 21-34+), and background lockscreen actions.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon">⚙️</div>
+          <h3>C++ & CMake</h3>
+          <div class="tech-role">Engine Embedding</div>
+          <p>Native Flutter engine embedding and build pipeline automation linking low-level platform channels and graphics compilation.</p>
+        </div>
+
+        <div class="tech-card">
+          <div class="tech-icon">🌐</div>
+          <h3>HTML5 & CSS3</h3>
+          <div class="tech-role">Web & Documentation</div>
+          <p>Clean semantic markup and modern CSS variables powering this responsive GitHub Pages showcase and user documentation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: ALL APP FEATURES -->
+  <section id="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>✨ Core Features</h2>
+        <p>Built from the ground up to give you total control over your semester.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-box">
+          <div class="feature-icon-badge">🔔</div>
+          <div class="feature-content">
+            <h3>Reliable Background Notifications</h3>
+            <p>Guaranteed alerts even when the app is completely closed: early reminder, class start alert with PRESENT / ABSENT action buttons, and automatic post-class unmarked notification.</p>
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-badge">📊</div>
+          <div class="feature-content">
+            <h3>3D Analytics & Bunk Calculators</h3>
+            <p>Visual 3D vertical pillar comparison chart with horizontal labels for long subject names. Tells you exactly: <em>"You can safely miss 3 more classes"</em> or <em>"Attend 2 consecutive classes to reach 75%"</em>.</p>
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-badge">📅</div>
+          <div class="feature-content">
+            <h3>One-Tap CSV Timetable Import</h3>
+            <p>Import your entire weekly semester schedule from Excel or CSV. Automatically extracts subject titles, faculty names, room numbers, and schedules up to 52 weeks.</p>
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-badge">⚡</div>
+          <div class="feature-content">
+            <h3>Smart Class In Session Card</h3>
+            <p>Front-and-centre hero card displaying your ongoing lecture, room number, faculty name, and a 1-tap toggle to switch between Present and Absent.</p>
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-badge">🌓</div>
+          <div class="feature-content">
+            <h3>Seamless Light & Dark Theme</h3>
+            <p>Warm paper-toned light palette and deep OLED dark mode with zero startup flash. Settings pre-load before the first frame renders.</p>
+          </div>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-badge">🛡️</div>
+          <div class="feature-content">
+            <h3>100% Offline & Private</h3>
+            <p>No account, no sign-in, no tracking, and no internet required. Your attendance and profile data remain completely secure on your personal phone.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 4: SCREENSHOTS PLACEHOLDERS -->
+  <section id="screenshots" style="background: #F2F7F4;">
+    <div class="container">
+      <div class="section-title">
+        <h2>📸 App Screenshots</h2>
+        <p>Placeholders reserved for high-resolution interface captures.</p>
+      </div>
+
+      <div class="screenshots-grid">
+        <!-- Slot 1: Ledger -->
+        <div class="screenshot-slot">
+          <div class="placeholder-art">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <line x1="7" y1="8" x2="17" y2="8"/>
+              <line x1="7" y1="12" x2="17" y2="12"/>
+              <line x1="7" y1="16" x2="13" y2="16"/>
+            </svg>
+            <div class="placeholder-label">Screenshot Placeholder</div>
+            <div class="placeholder-sub">Ledger & Daily Schedule</div>
+          </div>
+          <div class="slot-caption">1. Attendance Ledger</div>
+        </div>
+
+        <!-- Slot 2: Active Class -->
+        <div class="screenshot-slot">
+          <div class="placeholder-art">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <div class="placeholder-label">Screenshot Placeholder</div>
+            <div class="placeholder-sub">Live Class & Quick Actions</div>
+          </div>
+          <div class="slot-caption">2. Class In Session</div>
+        </div>
+
+        <!-- Slot 3: Analytics -->
+        <div class="screenshot-slot">
+          <div class="placeholder-art">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            <div class="placeholder-label">Screenshot Placeholder</div>
+            <div class="placeholder-sub">Bunk Safety & Charts</div>
+          </div>
+          <div class="slot-caption">3. Analytics & Stats</div>
+        </div>
+
+        <!-- Slot 4: Subjects & Settings -->
+        <div class="screenshot-slot">
+          <div class="placeholder-art">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <div class="placeholder-label">Screenshot Placeholder</div>
+            <div class="placeholder-sub">Preferences & CSV Import</div>
+          </div>
+          <div class="slot-caption">4. Settings & Management</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: EASY DOWNLOAD & INSTALL GUIDE -->
+  <section id="download">
+    <div class="container">
+      <div class="install-box">
+        <h2>📥 Download Attendance Tracker v1.0</h2>
+        <p class="lead">Free, standalone Android package. Works directly on any phone running Android 5.0 (Lollipop) or newer.</p>
+
+        <!-- 4 Step Installation Guide -->
+        <div class="steps-row">
+          <div class="step-card">
+            <div class="step-num">1</div>
+            <h4>Download APK</h4>
+            <p>Click the download button below to save <strong>Attendance-Tracker-v1.0.apk</strong> to your device.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">2</div>
+            <h4>Allow Download</h4>
+            <p>If your browser shows <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong> (standard Android warning for direct APK downloads).</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">3</div>
+            <h4>Install</h4>
+            <p>Open the file from your downloads folder. If prompted, toggle <strong>"Allow from this source"</strong> and tap Install.</p>
+          </div>
+          <div class="step-card">
+            <div class="step-num">4</div>
+            <h4>Track & Relax</h4>
+            <p>Launch the app, set your target percentage (e.g. 75%), import your timetable, and you're all set!</p>
+          </div>
+        </div>
+
+        <a class="apk-download-btn" href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases/latest/download/Attendance-Tracker-v1.0.apk">
+          <span>📲 Download Attendance-Tracker-v1.0.apk</span>
+        </a>
+
+        <div class="apk-meta">
+          📦 Package: <code>Attendance-Tracker-v1.0.apk</code> · 📏 Size: ~55 MB · 🏷️ Release: v1.0.0
+          <br/>
+          <a href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases" style="color: var(--accent-soft); text-decoration: underline;" target="_blank">Browse all releases on GitHub</a>
+        </div>
+
+        <!-- Note regarding private repository -->
+        <div class="note-card">
+          <strong>🔒 Note for Private Repository:</strong>
+          If this repository is made private in the future, direct release download links will require you or your invited collaborators to be signed in to your GitHub account. All assets on this landing page use local relative paths to ensure everything loads smoothly in all modes.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>
+      <strong>Attendance Ledger v1.0</strong> · Built with ❤️ and Flutter by <a href="https://github.com/Biswas-here" target="_blank">Snehasish Biswas</a>
+    </p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">
+      Licensed under the <a href="https://github.com/Biswas-here/Attendance-Tracker-for-clg/blob/main/LICENSE" target="_blank">MIT License</a> · 100% Offline & Private
+    </p>
+  </footer>
 
 </body>
 </html>
-

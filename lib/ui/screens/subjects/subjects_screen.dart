@@ -11,19 +11,50 @@ import 'add_edit_subject_dialog.dart';
 import 'subject_detail_screen.dart';
 
 class SubjectsScreen extends StatefulWidget {
-  const SubjectsScreen({super.key});
+  final bool isTabActive;
+  const SubjectsScreen({super.key, this.isTabActive = true});
 
   @override
   State<SubjectsScreen> createState() => _SubjectsScreenState();
 }
 
-class _SubjectsScreenState extends State<SubjectsScreen> {
+class _SubjectsScreenState extends State<SubjectsScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  late final AnimationController _animController;
+  late final Animation<double> _curvedAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _curvedAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+    if (widget.isTabActive) {
+      _animController.forward(from: 0.0);
+    } else {
+      _animController.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant SubjectsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isTabActive && !oldWidget.isTabActive) {
+      _animController.forward(from: 0.0);
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _animController.dispose();
     super.dispose();
   }
 
@@ -193,99 +224,109 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                           final subTarget = subject.targetPercentage ?? settings.defaultAttendanceTarget;
                           final meetsTarget = stats.meetsTarget(subTarget);
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                            child: PaperCard(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => SubjectDetailScreen(subjectId: subject.id),
-                                  ),
-                                );
-                              },
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      NerdySubjectBadge(
-                                        subjectName: subject.name,
-                                        subjectId: subject.id,
-                                        colorValue: subject.colorValue,
-                                        size: 40,
-                                        iconSize: 22,
+                          return AnimatedBuilder(
+                            animation: _curvedAnim,
+                            builder: (context, _) {
+                              final factor = _curvedAnim.value;
+                              final animatedPct = stats.percentage != null
+                                  ? (stats.percentage! * factor)
+                                  : null;
+
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                                child: PaperCard(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => SubjectDetailScreen(subjectId: subject.id),
                                       ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              subject.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w800,
-                                              ),
+                                    );
+                                  },
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          NerdySubjectBadge(
+                                            subjectName: subject.name,
+                                            subjectId: subject.id,
+                                            colorValue: subject.colorValue,
+                                            size: 40,
+                                            iconSize: 22,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  subject.name,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: const TextStyle(
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                                if (subject.teacher != null && subject.teacher!.isNotEmpty)
+                                                  Text(
+                                                    subject.teacher!,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: isDark
+                                                          ? AppColors.darkTextSecondary
+                                                          : AppColors.lightTextSecondary,
+                                                    ),
+                                                  ),
+                                              ],
                                             ),
-                                            if (subject.teacher != null && subject.teacher!.isNotEmpty)
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Column(
+                                            crossAxisAlignment: CrossAxisAlignment.end,
+                                            children: [
                                               Text(
-                                                subject.teacher!,
+                                                animatedPct != null
+                                                    ? '${animatedPct.toStringAsFixed(1)}%'
+                                                    : '--',
+                                                style: TextStyle(
+                                                  fontSize: 17,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: stats.percentage == null
+                                                      ? (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)
+                                                      : (meetsTarget ? AppColors.present : AppColors.absent),
+                                                ),
+                                              ),
+                                              Text(
+                                                '${stats.presentCount} / ${stats.totalMarked} attended',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
-                                                  fontSize: 12,
+                                                  fontSize: 11,
                                                   color: isDark
                                                       ? AppColors.darkTextSecondary
                                                       : AppColors.lightTextSecondary,
                                                 ),
                                               ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            stats.percentage != null
-                                                ? '${stats.percentage!.toStringAsFixed(1)}%'
-                                                : '--',
-                                            style: TextStyle(
-                                              fontSize: 17,
-                                              fontWeight: FontWeight.w900,
-                                              color: stats.percentage == null
-                                                  ? (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)
-                                                  : (meetsTarget ? AppColors.present : AppColors.absent),
-                                            ),
-                                          ),
-                                          Text(
-                                            '${stats.presentCount} / ${stats.totalMarked} attended',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: isDark
-                                                  ? AppColors.darkTextSecondary
-                                                  : AppColors.lightTextSecondary,
-                                            ),
+                                            ],
                                           ),
                                         ],
                                       ),
+                                      const SizedBox(height: 12),
+                                      PaperLinearProgress(
+                                        percentage: animatedPct,
+                                        targetPercentage: subTarget,
+                                        height: 12,
+                                      ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
-                                  PaperLinearProgress(
-                                    percentage: stats.percentage,
-                                    targetPercentage: subTarget,
-                                    height: 12,
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),

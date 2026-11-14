@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/services/haptic_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -17,60 +18,72 @@ class FloatingNavDock extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final dockBg = isDark ? const Color(0xFF262421) : const Color(0xFFFAF7F0);
+    final baseBg = isDark ? const Color(0xFF262421) : const Color(0xFFFAF7F0);
+    final dockBg = baseBg.withAlpha(isDark ? 218 : 228);
     final dockBorder = isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong;
 
     return SafeArea(
       child: RepaintBoundary(
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
-            color: dockBg,
             borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: dockBorder, width: 1.5),
             boxShadow: PaperDecorations.dockShadow(isDark: isDark),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-            _buildNavItem(
-              context: context,
-              index: 0,
-              icon: Icons.auto_stories_outlined,
-              selectedIcon: Icons.auto_stories,
-              label: 'Ledger',
-              isDark: isDark,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18.0, sigmaY: 18.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                decoration: BoxDecoration(
+                  color: dockBg,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: dockBorder, width: 1.5),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(
+                      context: context,
+                      index: 0,
+                      icon: Icons.auto_stories_outlined,
+                      selectedIcon: Icons.auto_stories,
+                      label: 'Ledger',
+                      isDark: isDark,
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      index: 1,
+                      icon: Icons.calendar_month_outlined,
+                      selectedIcon: Icons.calendar_month,
+                      label: 'Timetable',
+                      isDark: isDark,
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      index: 2,
+                      icon: Icons.library_books_outlined,
+                      selectedIcon: Icons.library_books,
+                      label: 'Subjects',
+                      isDark: isDark,
+                    ),
+                    _buildNavItem(
+                      context: context,
+                      index: 3,
+                      icon: Icons.insert_chart_outlined_rounded,
+                      selectedIcon: Icons.insert_chart_rounded,
+                      label: 'Analytics',
+                      isDark: isDark,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            _buildNavItem(
-              context: context,
-              index: 1,
-              icon: Icons.calendar_month_outlined,
-              selectedIcon: Icons.calendar_month,
-              label: 'Timetable',
-              isDark: isDark,
-            ),
-            _buildNavItem(
-              context: context,
-              index: 2,
-              icon: Icons.library_books_outlined,
-              selectedIcon: Icons.library_books,
-              label: 'Subjects',
-              isDark: isDark,
-            ),
-            _buildNavItem(
-              context: context,
-              index: 3,
-              icon: Icons.insert_chart_outlined_rounded,
-              selectedIcon: Icons.insert_chart_rounded,
-              label: 'Analytics',
-              isDark: isDark,
-            ),
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildNavItem({

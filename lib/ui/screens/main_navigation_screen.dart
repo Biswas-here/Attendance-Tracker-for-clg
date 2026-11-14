@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/services/haptic_service.dart';
 import '../../core/services/notification_service.dart';
 import '../../providers/attendance_provider.dart';
 import '../../providers/settings_provider.dart';
@@ -19,10 +20,12 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen>
     with WidgetsBindingObserver {
   int _currentIndex = 0;
+  late final PageController _pageController;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addObserver(this);
 
     // Listen to notification payload events (e.g. tapping an unmarked class notification)
@@ -40,6 +43,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   void dispose() {
     NotificationService.onNotificationPayload.removeListener(_handleNotificationPayload);
     WidgetsBinding.instance.removeObserver(this);
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -102,45 +106,89 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
         if (parsedDate != null) {
           // Switch to Ledger tab and navigate to that specific day
           setState(() => _currentIndex = 0);
+          if (_pageController.hasClients) {
+            _pageController.jumpToPage(0);
+          }
           context.read<AttendanceProvider>().setSelectedDate(parsedDate);
         }
       }
     }
   }
 
+  void _onTabSelected(int index) {
+    if (_currentIndex == index) return;
+    setState(() => _currentIndex = index);
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screens = [
-      LedgerScreen(
-        isTabActive: _currentIndex == 0,
-        onSwitchTab: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+      _KeepAlivePage(
+        child: LedgerScreen(
+          isTabActive: _currentIndex == 0,
+          onSwitchTab: _onTabSelected,
+        ),
       ),
-      const TimetableScreen(),
-      const SubjectsScreen(),
-      AnalyticsScreen(
-        isTabActive: _currentIndex == 3,
+      const _KeepAlivePage(
+        child: TimetableScreen(),
+      ),
+      _KeepAlivePage(
+        child: SubjectsScreen(
+          isTabActive: _currentIndex == 2,
+        ),
+      ),
+      _KeepAlivePage(
+        child: AnalyticsScreen(
+          isTabActive: _currentIndex == 3,
+        ),
       ),
     ];
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(
-        index: _currentIndex,
+      body: PageView(
+        controller: _pageController,
+        physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
+        onPageChanged: (index) {
+          if (_currentIndex != index) {
+            setState(() => _currentIndex = index);
+            HapticService.selection();
+          }
+        },
         children: screens,
       ),
       bottomNavigationBar: FloatingNavDock(
         currentIndex: _currentIndex,
-        onIndexChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onIndexChanged: _onTabSelected,
       ),
     );
+  }
+}
+
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  const _KeepAlivePage({required this.child});
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 

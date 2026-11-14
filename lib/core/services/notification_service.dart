@@ -237,12 +237,13 @@ class NotificationService {
     }
 
     // 2. Class start reminder (at start time) with Present / Absent quick actions
+    // Redesigned: Clear subject title, simple present/absent instruction, no cluttered room/time text
     if (startDt.isAfter(now)) {
       await _scheduleSingleNotification(
         id: baseId + 1,
         scheduledDate: startDt,
-        title: 'Class In Session: $subjectName',
-        body: '${session.startTime} - ${session.endTime}$roomInfo. Tap PRESENT or ABSENT.',
+        title: subjectName,
+        body: 'Mark Attendance: Present or Absent',
         sessionId: 'session:${session.id}',
         includeActions: true,
       );
@@ -475,6 +476,102 @@ class NotificationService {
         debugPrint('Fallback notification failed: $fallbackError');
       }
     }
+  }
+
+  static const int semesterCompletionNotificationId = 888888;
+
+  /// Schedule congratulations notification for 1 hour after the last class of the semester
+  Future<void> scheduleSemesterCompletionNotification({
+    required UserSettings settings,
+    required List<ClassSession> allSessions,
+  }) async {
+    if (!settings.notificationsEnabled || !settings.hasSemesterRange) return;
+
+    final endStr = settings.semesterEndDate;
+    if (endStr == null || endStr.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final notifKey = 'semester_completion_notified_$endStr';
+    if (prefs.getBool(notifKey) == true) return;
+
+    final now = DateTime.now();
+
+    // Find sessions belonging to this semester
+    final semesterSessions = allSessions.where((s) => settings.isDateInSemester(s.startDateTime)).toList();
+
+    DateTime completionTime;
+    if (semesterSessions.isNotEmpty) {
+      final lastSession = semesterSessions.reduce((a, b) => a.endDateTime.isAfter(b.endDateTime) ? a : b);
+      completionTime = lastSession.endDateTime.add(const Duration(hours: 1));
+    } else {
+      final endDate = settings.semesterEndDateTime;
+      if (endDate == null) return;
+      completionTime = DateTime(endDate.year, endDate.month, endDate.day, 18, 0);
+    }
+
+    if (completionTime.isAfter(now)) {
+      await _scheduleSingleNotification(
+        id: semesterCompletionNotificationId,
+        scheduledDate: completionTime,
+        title: 'Congratulations! 🎓',
+        body: 'Semester completed! You\'ve finished all your classes.',
+        sessionId: 'semester_completed:$endStr',
+        includeActions: false,
+      );
+    } else if (settings.isSemesterEnded || (semesterSessions.isNotEmpty && semesterSessions.every((s) => s.endDateTime.isBefore(now)))) {
+      await showSemesterCompletionNotification(semesterEndDate: endStr);
+    }
+  }
+
+  /// Show the semester completion congratulations notification immediately
+  Future<void> showSemesterCompletionNotification({
+    required String semesterEndDate,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final notifKey = 'semester_completion_notified_$semesterEndDate';
+    if (prefs.getBool(notifKey) == true) return;
+
+    try {
+      await _notificationsPlugin.show(
+        id: semesterCompletionNotificationId,
+        title: 'Congratulations! 🎓',
+        body: 'Semester completed! You\'ve finished all your classes.',
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+            enableVibration: true,
+            visibility: NotificationVisibility.public,
+            category: AndroidNotificationCategory.status,
+            autoCancel: true,
+          ),
+        ),
+        payload: 'semester_completed:$semesterEndDate',
+      );
+      await prefs.setBool(notifKey, true);
+    } catch (e) {
+      debugPrint('Error showing semester completion notification: $e');
+    }
+  }
+
+  /// Check and show congratulations notification if semester has ended and not yet shown
+  Future<void> checkAndShowSemesterCompletionNotification({
+    required UserSettings settings,
+    required List<ClassSession> allSessions,
+  }) async {
+    if (!settings.notificationsEnabled || !settings.hasSemesterRange) return;
+    final endStr = settings.semesterEndDate;
+    if (endStr == null || endStr.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final notifKey = 'semester_completion_notified_$endStr';
+    if (prefs.getBool(notifKey) == true) return;
+
+    await showSemesterCompletionNotification(semesterEndDate: endStr);
   }
 
   Future<void> cancelSessionReminder(String sessionId) async {

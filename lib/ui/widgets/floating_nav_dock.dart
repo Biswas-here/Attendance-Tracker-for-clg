@@ -19,7 +19,7 @@ class FloatingNavDock extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final baseBg = isDark ? const Color(0xFF262421) : const Color(0xFFFAF7F0);
-    final dockBg = baseBg.withAlpha(isDark ? 218 : 228);
+    final dockBg = baseBg.withAlpha(isDark ? 228 : 238);
     final dockBorder = isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong;
 
     return SafeArea(
@@ -33,7 +33,7 @@ class FloatingNavDock extends StatelessWidget {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(28),
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 18.0, sigmaY: 18.0),
+              filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 decoration: BoxDecoration(

@@ -61,9 +61,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       final settingsProv = context.read<SettingsProvider>();
       final settings = settingsProv.settings;
 
-      // If semester has ended, cancel all class notifications and do not schedule any
+      // If semester has ended, cancel all class notifications and check completion congratulations
       if (settings.isSemesterEnded) {
         await NotificationService.instance.cancelAll();
+        await NotificationService.instance.checkAndShowSemesterCompletionNotification(
+          settings: settings,
+          allSessions: attendance.allSessions,
+        );
         return;
       }
 

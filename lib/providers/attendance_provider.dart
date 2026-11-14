@@ -530,8 +530,17 @@ class AttendanceProvider with ChangeNotifier {
 
   /// Syncs notifications for all upcoming classes (next 14 days) in AlarmManager
   Future<void> syncAllUpcomingNotifications(UserSettings settings) async {
-    if (!settings.notificationsEnabled || settings.isSemesterEnded) {
+    if (!settings.notificationsEnabled) {
       await NotificationService.instance.cancelAll();
+      return;
+    }
+
+    if (settings.isSemesterEnded) {
+      await NotificationService.instance.cancelAll();
+      await NotificationService.instance.checkAndShowSemesterCompletionNotification(
+        settings: settings,
+        allSessions: _allSessions,
+      );
       return;
     }
 
@@ -558,6 +567,12 @@ class AttendanceProvider with ChangeNotifier {
         advanceMinutes: settings.advanceReminderEnabled ? settings.advanceReminderMinutes : 0,
       );
     }
+
+    // Schedule congratulations notification for 1 hour after the semester's last class
+    await NotificationService.instance.scheduleSemesterCompletionNotification(
+      settings: settings,
+      allSessions: _allSessions,
+    );
   }
 
   Future<void> rescheduleAllNotifications(UserSettings settings) async {

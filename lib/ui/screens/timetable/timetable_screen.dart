@@ -8,6 +8,7 @@ import '../../../providers/attendance_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../widgets/paper_card.dart';
 import '../../widgets/paper_stamp.dart';
+import '../../widgets/staggered_entrance.dart';
 import 'schedule_class_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
@@ -429,12 +430,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
         padding: const EdgeInsets.only(bottom: 100),
         children: [
           // ── SEMESTER TERM CONFIGURATION BAR ─────────────────────────────
-          _buildSemesterTermBar(settingsProv, settingsProv.settings, isDark),
+          StaggeredEntrance(
+            index: 0,
+            child: _buildSemesterTermBar(settingsProv, settingsProv.settings, isDark),
+          ),
 
           // ── MODERN DIGITAL PLANNER CALENDAR CARD ────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: PaperCard(
+          StaggeredEntrance(
+            index: 1,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: PaperCard(
               showTape: true,
               tapeColor: AppColors.craftTeal,
               padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
@@ -528,6 +534,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               ),
             ),
           ),
+        ),
 
           // ── HOLIDAY BANNER IF SELECTED DATE IS HOLIDAY ─────────────────
           if (holidayReason != null && isInSemester)
@@ -623,90 +630,100 @@ class _TimetableScreenState extends State<TimetableScreen> {
             ),
 
           // ── SELECTED DATE SCHEDULE HEADER ───────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        AppDateUtils.formatDisplayDate(selectedDate),
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.2,
+          StaggeredEntrance(
+            index: 2,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          AppDateUtils.formatDisplayDate(selectedDate),
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${daySessions.length} Class${daySessions.length == 1 ? "" : "es"} Scheduled',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark ? const Color(0xFF2C2825) : const Color(0xFFEBE6DC),
+                      foregroundColor: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                    ),
+                    onPressed: () => _showQuickAddDialog(selectedDate),
+                    icon: const Icon(Icons.add_circle_outline, size: 16),
+                    label: const Text('Quick Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── SESSIONS LIST OR EMPTY STATE ────────────────────────────────
+          if (daySessions.isEmpty)
+            StaggeredEntrance(
+              index: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: PaperCard(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.event_available, size: 44, color: AppColors.kraftBrown),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'No classes scheduled for this date',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                      ),
+                      const SizedBox(height: 6),
                       Text(
-                        '${daySessions.length} Class${daySessions.length == 1 ? "" : "es"} Scheduled',
+                        holidayReason != null
+                            ? 'This date is marked as an off-day ($holidayReason).'
+                            : 'Tap Quick Add or Schedule above to add a class.',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
                           color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? const Color(0xFF2C2825) : const Color(0xFFEBE6DC),
-                    foregroundColor: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
-                      ),
-                    ),
-                  ),
-                  onPressed: () => _showQuickAddDialog(selectedDate),
-                  icon: const Icon(Icons.add_circle_outline, size: 16),
-                  label: const Text('Quick Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
-                ),
-              ],
-            ),
-          ),
-
-          // ── SESSIONS LIST OR EMPTY STATE ────────────────────────────────
-          if (daySessions.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: PaperCard(
-                child: Column(
-                  children: [
-                    const Icon(Icons.event_available, size: 44, color: AppColors.kraftBrown),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'No classes scheduled for this date',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      holidayReason != null
-                          ? 'This date is marked as an off-day ($holidayReason).'
-                          : 'Tap Quick Add or Schedule above to add a class.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             )
           else
-            ...daySessions.map((session) {
+            ...daySessions.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final session = entry.value;
               final sub = subjectsMap[session.subjectId];
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                child: PaperCard(
+              return StaggeredEntrance(
+                index: 3 + (idx < 5 ? idx : 5),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                  child: PaperCard(
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -830,8 +847,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     ],
                   ),
                 ),
-              );
-            }),
+              ),
+            );
+          }),
         ],
       ),
     );

@@ -92,6 +92,9 @@ class AttendanceActionButton extends StatefulWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final EdgeInsetsGeometry? padding;
+  final double iconSize;
+  final double fontSize;
 
   const AttendanceActionButton({
     super.key,
@@ -99,6 +102,9 @@ class AttendanceActionButton extends StatefulWidget {
     required this.icon,
     required this.color,
     required this.onTap,
+    this.padding,
+    this.iconSize = 32,
+    this.fontSize = 15,
   });
 
   @override
@@ -156,7 +162,7 @@ class _AttendanceActionButtonState extends State<AttendanceActionButton>
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 90),
           transform: Matrix4.translationValues(0, _isPressed ? 3.0 : 0.0, 0),
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+          padding: widget.padding ?? const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
           decoration: PaperDecorations.attendanceButtonDecoration(
             color: widget.color,
             isPressed: _isPressed,
@@ -164,14 +170,14 @@ class _AttendanceActionButtonState extends State<AttendanceActionButton>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(widget.icon, color: Colors.white, size: 32),
-              const SizedBox(height: 8),
+              Icon(widget.icon, color: Colors.white, size: widget.iconSize),
+              const SizedBox(height: 6),
               Text(
                 widget.title,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: 15,
+                  fontSize: widget.fontSize,
                   letterSpacing: 1.2,
                 ),
               ),

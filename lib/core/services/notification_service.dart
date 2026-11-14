@@ -7,6 +7,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../database/app_database.dart';
 import '../models/class_session.dart';
+import '../models/user_settings.dart';
 import '../utils/date_utils.dart';
 
 @pragma('vm:entry-point')
@@ -292,7 +293,11 @@ class NotificationService {
   Future<void> syncUnmarkedClassNotifications({
     required List<ClassSession> allSessions,
     required Map<String, String> subjectNames,
+    UserSettings? settings,
   }) async {
+    if (settings != null && (!settings.notificationsEnabled || settings.isSemesterEnded)) {
+      return;
+    }
     final now = DateTime.now();
     final todayStr = AppDateUtils.formatDateYmd(now);
 
@@ -301,6 +306,9 @@ class NotificationService {
     final notifiedIds = (prefs.getStringList(notifiedKey) ?? <String>[]).toSet();
 
     for (final s in allSessions) {
+      if (settings != null && !settings.isDateInSemester(s.startDateTime)) {
+        continue;
+      }
       final isToday = s.date == todayStr;
       final hasEnded = s.endDateTime.isBefore(now);
       final isUnmarked = s.status == AttendanceStatus.unmarked;

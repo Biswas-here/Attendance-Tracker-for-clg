@@ -146,11 +146,13 @@ class _RetroSegmentBarPainter extends CustomPainter {
   }
 }
 
-class PaperCircularProgress extends StatelessWidget {
+class PaperCircularProgress extends StatefulWidget {
   final double? percentage;
   final double targetPercentage;
   final double size;
   final double strokeWidth;
+  final bool animate;
+  final int animTrigger;
 
   const PaperCircularProgress({
     super.key,
@@ -158,73 +160,130 @@ class PaperCircularProgress extends StatelessWidget {
     this.targetPercentage = 75.0,
     this.size = 140.0,
     this.strokeWidth = 12.0,
+    this.animate = true,
+    this.animTrigger = 0,
   });
+
+  @override
+  State<PaperCircularProgress> createState() => _PaperCircularProgressState();
+}
+
+class _PaperCircularProgressState extends State<PaperCircularProgress>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _curvedAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
+    _curvedAnim = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.easeOutCubic,
+    );
+    if (widget.animate && widget.percentage != null) {
+      _animController.forward(from: 0.0);
+    } else {
+      _animController.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PaperCircularProgress oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (((widget.percentage != oldWidget.percentage) ||
+         (widget.animTrigger != oldWidget.animTrigger) ||
+         (widget.animate && !oldWidget.animate)) &&
+        widget.animate) {
+      if (widget.percentage != null) {
+        _animController.forward(from: 0.0);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final meetsTarget = percentage != null && percentage! >= targetPercentage;
-    final progressColor = percentage == null
+    final meetsTarget = widget.percentage != null && widget.percentage! >= widget.targetPercentage;
+    final progressColor = widget.percentage == null
         ? AppColors.unmarked
         : (meetsTarget ? AppColors.present : AppColors.absent);
 
     final trackColor = isDark ? const Color(0xFF33302B) : const Color(0xFFECE7DC);
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background track
-          SizedBox(
-            width: size,
-            height: size,
-            child: CircularProgressIndicator(
-              value: 1.0,
-              strokeWidth: strokeWidth,
-              color: trackColor,
-            ),
-          ),
-          // Actual value arc
-          if (percentage != null)
-            SizedBox(
-              width: size,
-              height: size,
-              child: CircularProgressIndicator(
-                value: (percentage! / 100.0).clamp(0.0, 1.0),
-                strokeWidth: strokeWidth,
-                strokeCap: StrokeCap.round,
-                color: progressColor,
-              ),
-            ),
-          // Inner text content
-          Column(
-            mainAxisSize: MainAxisSize.min,
+    return AnimatedBuilder(
+      animation: _curvedAnim,
+      builder: (context, _) {
+        final animFactor = widget.animate ? _curvedAnim.value : 1.0;
+        final currentPct = widget.percentage != null ? widget.percentage! * animFactor : null;
+        final progressVal = currentPct != null ? (currentPct / 100.0).clamp(0.0, 1.0) : 0.0;
+
+        return SizedBox(
+          width: widget.size,
+          height: widget.size,
+          child: Stack(
+            alignment: Alignment.center,
             children: [
-              Text(
-                percentage != null ? '${percentage!.toStringAsFixed(1)}%' : '--',
-                style: TextStyle(
-                  fontSize: size * 0.22,
-                  fontWeight: FontWeight.w900,
-                  color: progressColor,
-                  letterSpacing: -0.5,
+              // Background track
+              SizedBox(
+                width: widget.size,
+                height: widget.size,
+                child: CircularProgressIndicator(
+                  value: 1.0,
+                  strokeWidth: widget.strokeWidth,
+                  color: trackColor,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                'TARGET ${targetPercentage.toInt()}%',
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              // Actual animated value arc
+              if (widget.percentage != null)
+                SizedBox(
+                  width: widget.size,
+                  height: widget.size,
+                  child: CircularProgressIndicator(
+                    value: progressVal,
+                    strokeWidth: widget.strokeWidth,
+                    strokeCap: StrokeCap.round,
+                    color: progressColor,
+                  ),
                 ),
+              // Inner text content counting up
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    currentPct != null ? '${currentPct.toStringAsFixed(1)}%' : '--',
+                    style: TextStyle(
+                      fontSize: widget.size * 0.22,
+                      fontWeight: FontWeight.w900,
+                      color: progressColor,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'TARGET ${widget.targetPercentage.toInt()}%',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

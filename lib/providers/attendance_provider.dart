@@ -246,7 +246,9 @@ class AttendanceProvider with ChangeNotifier {
     _allSessions.add(session);
     notifyListeners();
 
-    if (userSettings?.notificationsEnabled ?? true) {
+    if ((userSettings?.notificationsEnabled ?? true) &&
+        !(userSettings?.isSemesterEnded ?? false) &&
+        (userSettings == null || userSettings.isDateInSemester(session.startDateTime))) {
       final subject = getSubjectById(subjectId);
       if (subject != null) {
         await NotificationService.instance.scheduleSessionReminder(
@@ -477,7 +479,7 @@ class AttendanceProvider with ChangeNotifier {
 
   /// Syncs notifications for all upcoming classes (next 14 days) in AlarmManager
   Future<void> syncAllUpcomingNotifications(UserSettings settings) async {
-    if (!settings.notificationsEnabled) {
+    if (!settings.notificationsEnabled || settings.isSemesterEnded) {
       await NotificationService.instance.cancelAll();
       return;
     }
@@ -488,6 +490,7 @@ class AttendanceProvider with ChangeNotifier {
     final upcomingSessions = _allSessions.where((s) {
       if (s.status != AttendanceStatus.unmarked) return false;
       if (s.endDateTime.isBefore(now)) return false;
+      if (!settings.isDateInSemester(s.startDateTime)) return false;
       return s.startDateTime.isBefore(maxDate);
     }).toList();
 

@@ -109,5 +109,36 @@ void main() {
       expect(canMiss2, 2);
     });
   });
+
+  group('Semester Range & Notification Safeguard Tests', () {
+    test('isSemesterEnded returns true after semester end date', () {
+      final pastEndSettings = UserSettings(
+        semesterStartDate: '2026-08-01',
+        semesterEndDate: '2026-11-01',
+      );
+      expect(pastEndSettings.isSemesterEnded, true);
+    });
+
+    test('isSemesterEnded returns false while semester is ongoing', () {
+      final ongoingSettings = UserSettings(
+        semesterStartDate: '2026-08-01',
+        semesterEndDate: '2026-12-31',
+      );
+      expect(ongoingSettings.isSemesterEnded, false);
+    });
+
+    test('isDateInSemester correctly identifies in/out of range dates', () {
+      final settings = UserSettings(
+        semesterStartDate: '2026-08-01',
+        semesterEndDate: '2026-12-15',
+      );
+
+      final inDate = DateTime(2026, 10, 10);
+      final outDate = DateTime(2026, 12, 20);
+
+      expect(settings.isDateInSemester(inDate), true);
+      expect(settings.isDateInSemester(outDate), false);
+    });
+  });
 }
 

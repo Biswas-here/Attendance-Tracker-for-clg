@@ -28,9 +28,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     // Listen to notification payload events (e.g. tapping an unmarked class notification)
     NotificationService.onNotificationPayload.addListener(_handleNotificationPayload);
 
-    // Initial notification housekeeping in background microtask after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncNotificationsInBackground();
+    // Initial notification housekeeping deferred to ensure butter-smooth 120Hz/60Hz launch scrolling
+    Future.delayed(const Duration(milliseconds: 2800), () {
+      if (mounted) {
+        _syncNotificationsInBackground();
+      }
     });
   }
 
@@ -53,6 +55,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
     try {
       final attendance = context.read<AttendanceProvider>();
       final settingsProv = context.read<SettingsProvider>();
+      final settings = settingsProv.settings;
+
+      // If semester has ended, cancel all class notifications and do not schedule any
+      if (settings.isSemesterEnded) {
+        await NotificationService.instance.cancelAll();
+        return;
+      }
 
       // Dismiss already-started active reminders from panel, preserving upcoming alarms & end-of-class unmarked alarms
       await NotificationService.instance.clearActiveFiredReminders(
@@ -64,10 +73,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       await NotificationService.instance.syncUnmarkedClassNotifications(
         allSessions: attendance.allSessions,
         subjectNames: subjectNames,
+        settings: settings,
       );
 
       // Ensure upcoming 14 days of classes are scheduled in AlarmManager
-      await attendance.syncAllUpcomingNotifications(settingsProv.settings);
+      await attendance.syncAllUpcomingNotifications(settings);
     } catch (e) {
       debugPrint('Background notification sync error: $e');
     }
@@ -102,6 +112,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
   Widget build(BuildContext context) {
     final screens = [
       LedgerScreen(
+        isTabActive: _currentIndex == 0,
         onSwitchTab: (index) {
           setState(() {
             _currentIndex = index;
@@ -110,7 +121,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen>
       ),
       const TimetableScreen(),
       const SubjectsScreen(),
-      const AnalyticsScreen(),
+      AnalyticsScreen(
+        isTabActive: _currentIndex == 3,
+      ),
     ];
 
     return Scaffold(

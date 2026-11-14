@@ -7,9 +7,52 @@ import '../../../core/theme/app_colors.dart';
 import '../../../providers/attendance_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../widgets/paper_card.dart';
+import '../../widgets/staggered_entrance.dart';
 
-class AnalyticsScreen extends StatelessWidget {
-  const AnalyticsScreen({super.key});
+class AnalyticsScreen extends StatefulWidget {
+  final bool isTabActive;
+  const AnalyticsScreen({super.key, this.isTabActive = true});
+
+  @override
+  State<AnalyticsScreen> createState() => _AnalyticsScreenState();
+}
+
+class _AnalyticsScreenState extends State<AnalyticsScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _chartAnimController;
+  late final Animation<double> _chartCurvedAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _chartAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    _chartCurvedAnim = CurvedAnimation(
+      parent: _chartAnimController,
+      curve: Curves.easeOutCubic,
+    );
+    if (widget.isTabActive) {
+      _chartAnimController.forward(from: 0.0);
+    } else {
+      _chartAnimController.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AnalyticsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isTabActive && !oldWidget.isTabActive) {
+      _chartAnimController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _chartAnimController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,334 +75,349 @@ class AnalyticsScreen extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: 100, top: 8),
         children: [
           // ── 3D METRIC SUMMARY TILES ──────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _build3DMetricTile(
-                    label: 'ATTENDED',
-                    count: '${overall.totalPresent}',
-                    subtext: 'Classes',
-                    color: AppColors.present,
-                    icon: Icons.check_circle_rounded,
-                    isDark: isDark,
+          StaggeredEntrance(
+            index: 0,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _build3DMetricTile(
+                      label: 'ATTENDED',
+                      count: '${overall.totalPresent}',
+                      subtext: 'Classes',
+                      color: AppColors.present,
+                      icon: Icons.check_circle_rounded,
+                      isDark: isDark,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _build3DMetricTile(
-                    label: 'MISSED',
-                    count: '${overall.totalAbsent}',
-                    subtext: 'Classes',
-                    color: AppColors.absent,
-                    icon: Icons.cancel_rounded,
-                    isDark: isDark,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _build3DMetricTile(
+                      label: 'MISSED',
+                      count: '${overall.totalAbsent}',
+                      subtext: 'Classes',
+                      color: AppColors.absent,
+                      icon: Icons.cancel_rounded,
+                      isDark: isDark,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _build3DMetricTile(
-                    label: 'UNMARKED',
-                    count: '${overall.totalUnmarked}',
-                    subtext: 'Pending',
-                    color: AppColors.unmarked,
-                    icon: Icons.help_outline_rounded,
-                    isDark: isDark,
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _build3DMetricTile(
+                      label: 'UNMARKED',
+                      count: '${overall.totalUnmarked}',
+                      subtext: 'Pending',
+                      color: AppColors.unmarked,
+                      icon: Icons.help_outline_rounded,
+                      isDark: isDark,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
           if (!hasData) ...[
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: PaperCard(
-                child: Column(
-                  children: [
-                    const Icon(Icons.analytics_outlined, size: 50, color: AppColors.kraftBrown),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Insufficient Data for Charts',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Mark attendance for at least one class to view 3D graphs, comparisons and trends.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            StaggeredEntrance(
+              index: 1,
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: PaperCard(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.analytics_outlined, size: 50, color: AppColors.kraftBrown),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Insufficient Data for Charts',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        'Mark attendance for at least one class to view 3D graphs, comparisons and trends.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ] else ...[
             // ── 1. 3D SUBJECT-WISE BEVELED BAR CHART ────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: PaperCard(
-                showTape: true,
-                tapeColor: AppColors.kraftGold,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.bar_chart_rounded, size: 22, color: AppColors.craftTeal),
-                        const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Subject Attendance Comparison',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.kraftGold.withAlpha(isDark ? 40 : 25),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.kraftGold.withAlpha(120)),
-                          ),
-                          child: Text(
-                            'Target: ${target.toInt()}%',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.kraftBrown,
+            StaggeredEntrance(
+              index: 1,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: PaperCard(
+                  showTape: true,
+                  tapeColor: AppColors.kraftGold,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.bar_chart_rounded, size: 22, color: AppColors.craftTeal),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Subject Attendance Comparison',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
                             ),
                           ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.kraftGold.withAlpha(isDark ? 40 : 25),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.kraftGold.withAlpha(120)),
+                            ),
+                            child: Text(
+                              'Target: ${target.toInt()}%',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.kraftBrown,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '3D grooved pillars. Red cylinders indicate below target.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '3D grooved pillars. Red cylinders indicate below target.',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 225,
-                      child: _buildSubjectBarChart(
-                        subjects: subjects,
-                        attendance: attendance,
-                        target: target,
-                        isDark: isDark,
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 225,
+                        child: _buildSubjectBarChart(
+                          subjects: subjects,
+                          attendance: attendance,
+                          target: target,
+                          isDark: isDark,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
             // ── 2. 3D LAYERED DONUT PIE CHART ──────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: PaperCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.pie_chart_outline_rounded, size: 22, color: AppColors.craftPlum),
-                        SizedBox(width: 8),
-                        Text(
-                          'Attendance Distribution',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 180,
-                      child: Row(
+            StaggeredEntrance(
+              index: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: PaperCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
                         children: [
-                          Expanded(
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                PieChart(
-                                  PieChartData(
-                                    sectionsSpace: 4,
-                                    centerSpaceRadius: 42,
-                                    sections: [
-                                      PieChartSectionData(
-                                        value: overall.totalPresent.toDouble(),
-                                        title: '${overall.totalPresent}',
-                                        color: AppColors.present,
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Color.lerp(AppColors.present, Colors.white, 0.25)!,
-                                            AppColors.present,
-                                            Color.lerp(AppColors.present, Colors.black, 0.3)!,
-                                          ],
+                          Icon(Icons.pie_chart_outline_rounded, size: 22, color: AppColors.craftPlum),
+                          SizedBox(width: 8),
+                          Text(
+                            'Attendance Distribution',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 180,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  PieChart(
+                                    PieChartData(
+                                      sectionsSpace: 4,
+                                      centerSpaceRadius: 42,
+                                      sections: [
+                                        PieChartSectionData(
+                                          value: overall.totalPresent.toDouble(),
+                                          title: '${overall.totalPresent}',
+                                          color: AppColors.present,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Color.lerp(AppColors.present, Colors.white, 0.25)!,
+                                              AppColors.present,
+                                              Color.lerp(AppColors.present, Colors.black, 0.3)!,
+                                            ],
+                                          ),
+                                          radius: 38,
+                                          titleStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 14,
+                                            shadows: [
+                                              Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
+                                            ],
+                                          ),
                                         ),
-                                        radius: 38,
-                                        titleStyle: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 14,
-                                          shadows: [
-                                            Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
-                                          ],
+                                        PieChartSectionData(
+                                          value: overall.totalAbsent.toDouble(),
+                                          title: '${overall.totalAbsent}',
+                                          color: AppColors.absent,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: [
+                                              Color.lerp(AppColors.absent, Colors.white, 0.25)!,
+                                              AppColors.absent,
+                                              Color.lerp(AppColors.absent, Colors.black, 0.3)!,
+                                            ],
+                                          ),
+                                          radius: 34,
+                                          titleStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w900,
+                                            fontSize: 13,
+                                            shadows: [
+                                              Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                      PieChartSectionData(
-                                        value: overall.totalAbsent.toDouble(),
-                                        title: '${overall.totalAbsent}',
-                                        color: AppColors.absent,
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            Color.lerp(AppColors.absent, Colors.white, 0.25)!,
-                                            AppColors.absent,
-                                            Color.lerp(AppColors.absent, Colors.black, 0.3)!,
-                                          ],
-                                        ),
-                                        radius: 34,
-                                        titleStyle: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 13,
-                                          shadows: [
-                                            Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                // Central 3D Embossed Medallion
-                                Container(
-                                  width: 72,
-                                  height: 72,
-                                  decoration: BoxDecoration(
-                                    color: isDark ? const Color(0xFF262320) : const Color(0xFFFBF8F2),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
-                                      width: 2,
+                                      ],
                                     ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withAlpha(isDark ? 90 : 35),
-                                        offset: const Offset(0, 3),
-                                        blurRadius: 6,
-                                      ),
-                                    ],
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        overall.percentage != null
-                                            ? '${overall.percentage!.toStringAsFixed(0)}%'
-                                            : '--',
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w900,
-                                          color: AppColors.craftTeal,
-                                        ),
+                                  // Central 3D Embossed Medallion
+                                  Container(
+                                    width: 72,
+                                    height: 72,
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF262320) : const Color(0xFFFBF8F2),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
+                                        width: 2,
                                       ),
-                                      Text(
-                                        'OVERALL',
-                                        style: TextStyle(
-                                          fontSize: 8,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.6,
-                                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withAlpha(isDark ? 90 : 35),
+                                          offset: const Offset(0, 3),
+                                          blurRadius: 6,
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          overall.percentage != null
+                                              ? '${overall.percentage!.toStringAsFixed(0)}%'
+                                              : '--',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w900,
+                                            color: AppColors.craftTeal,
+                                          ),
+                                        ),
+                                        Text(
+                                          'OVERALL',
+                                          style: TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.6,
+                                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _build3DPieLegend(
+                                  color: AppColors.present,
+                                  label: 'Present',
+                                  count: '${overall.totalPresent}',
+                                  sub: overall.totalMarked > 0
+                                      ? '${((overall.totalPresent / overall.totalMarked) * 100).toStringAsFixed(1)}%'
+                                      : '0%',
+                                  isDark: isDark,
+                                ),
+                                const SizedBox(height: 12),
+                                _build3DPieLegend(
+                                  color: AppColors.absent,
+                                  label: 'Absent',
+                                  count: '${overall.totalAbsent}',
+                                  sub: overall.totalMarked > 0
+                                      ? '${((overall.totalAbsent / overall.totalMarked) * 100).toStringAsFixed(1)}%'
+                                      : '0%',
+                                  isDark: isDark,
                                 ),
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _build3DPieLegend(
-                                color: AppColors.present,
-                                label: 'Present',
-                                count: '${overall.totalPresent}',
-                                sub: overall.totalMarked > 0
-                                    ? '${((overall.totalPresent / overall.totalMarked) * 100).toStringAsFixed(1)}%'
-                                    : '0%',
-                                isDark: isDark,
-                              ),
-                              const SizedBox(height: 12),
-                              _build3DPieLegend(
-                                color: AppColors.absent,
-                                label: 'Absent',
-                                count: '${overall.totalAbsent}',
-                                sub: overall.totalMarked > 0
-                                    ? '${((overall.totalAbsent / overall.totalMarked) * 100).toStringAsFixed(1)}%'
-                                    : '0%',
-                                isDark: isDark,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-                        ],
+                            const SizedBox(width: 8),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
 
             // ── 3. 3D ATTENDANCE TREND RIBBON (LINE CHART) ──────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: PaperCard(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(Icons.show_chart_rounded, size: 22, color: AppColors.craftTeal),
-                        SizedBox(width: 8),
-                        Text(
-                          'Attendance Rate Trend',
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+            StaggeredEntrance(
+              index: 3,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: PaperCard(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.show_chart_rounded, size: 22, color: AppColors.craftTeal),
+                          SizedBox(width: 8),
+                          Text(
+                            'Attendance Rate Trend',
+                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tactile progression timeline with craft pin markers',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Tactile progression timeline with craft pin markers',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 195,
-                      child: _buildAttendanceTrendChart(
-                        allSessions: allSessions,
-                        target: target,
-                        isDark: isDark,
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 195,
+                        child: _buildAttendanceTrendChart(
+                          allSessions: allSessions,
+                          target: target,
+                          isDark: isDark,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -552,142 +610,149 @@ class AnalyticsScreen extends StatelessWidget {
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: data.map((d) {
-                          final double fillFraction = (d.pct / 100.0).clamp(0.0, 1.0);
-                          final double filledHeight = (fillFraction * chartHeight).clamp(0.0, chartHeight);
-                          final bool isTallEnough = filledHeight >= 36.0;
+                      child: AnimatedBuilder(
+                        animation: _chartCurvedAnim,
+                        builder: (context, _) {
+                          final animFactor = _chartCurvedAnim.value;
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: data.map((d) {
+                              final currentPct = d.pct * animFactor;
+                              final double fillFraction = (currentPct / 100.0).clamp(0.0, 1.0);
+                              final double filledHeight = (fillFraction * chartHeight).clamp(0.0, chartHeight);
+                              final bool isTallEnough = filledHeight >= 36.0;
 
-                          return Tooltip(
-                            message: '${d.fullName}\n${d.pct.toStringAsFixed(1)}% (${d.attended}/${d.total} attended)',
-                            child: InkWell(
-                              onTap: () => HapticService.selection(),
-                              borderRadius: BorderRadius.circular(10),
-                              child: Container(
-                                width: 64,
-                                margin: const EdgeInsets.symmetric(horizontal: 6),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    // Percentage Badge above pillar
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: d.color.withAlpha(isDark ? 40 : 25),
-                                        borderRadius: BorderRadius.circular(6),
-                                        border: Border.all(color: d.color.withAlpha(120), width: 1),
-                                      ),
-                                      child: Text(
-                                        '${d.pct.toInt()}%',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                          color: d.color,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 6),
-
-                                    // 3D Pillar Container
-                                    Container(
-                                      width: 56,
-                                      height: chartHeight,
-                                      decoration: BoxDecoration(
-                                        color: (isDark ? const Color(0xFF221F1C) : const Color(0xFFEDE7DA)).withAlpha(180),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
-                                          width: 1.2,
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withAlpha(isDark ? 50 : 20),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 3,
+                              return Tooltip(
+                                message: '${d.fullName}\n${d.pct.toStringAsFixed(1)}% (${d.attended}/${d.total} attended)',
+                                child: InkWell(
+                                  onTap: () => HapticService.selection(),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    width: 64,
+                                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        // Percentage Badge above pillar
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: d.color.withAlpha(isDark ? 40 : 25),
+                                            borderRadius: BorderRadius.circular(6),
+                                            border: Border.all(color: d.color.withAlpha(120), width: 1),
                                           ),
-                                        ],
-                                      ),
-                                      child: Stack(
-                                        alignment: Alignment.bottomCenter,
-                                        children: [
-                                          // Raised 3D Pillar fill
-                                          Container(
-                                            width: 56,
-                                            height: filledHeight,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(7),
-                                              gradient: LinearGradient(
-                                                begin: Alignment.centerLeft,
-                                                end: Alignment.centerRight,
-                                                colors: [
-                                                  Color.lerp(d.color, Colors.white, 0.38)!,
-                                                  d.color,
-                                                  Color.lerp(d.color, Colors.black, 0.35)!,
-                                                ],
-                                                stops: const [0.0, 0.45, 1.0],
-                                              ),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: d.color.withAlpha(80),
-                                                  offset: const Offset(0, -1),
-                                                  blurRadius: 4,
-                                                ),
-                                              ],
+                                          child: Text(
+                                            '${currentPct.toInt()}%',
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w900,
+                                              color: d.color,
                                             ),
                                           ),
+                                        ),
+                                        const SizedBox(height: 6),
 
-                                          // Subject Label: inside pillar, horizontally formatted!
-                                          Positioned(
-                                            bottom: isTallEnough ? (filledHeight / 2) - 14 : 6,
-                                            left: 2,
-                                            right: 2,
-                                            child: IgnorePointer(
-                                              child: SizedBox(
-                                                width: 52,
-                                                height: 28,
-                                                child: Center(
-                                                  child: FittedBox(
-                                                    fit: BoxFit.scaleDown,
-                                                    alignment: Alignment.center,
-                                                    child: Text(
-                                                      d.label,
-                                                      textAlign: TextAlign.center,
-                                                      maxLines: 2,
-                                                      style: TextStyle(
-                                                        fontSize: 11,
-                                                        fontWeight: FontWeight.w900,
-                                                        height: 1.05,
-                                                        letterSpacing: 0.3,
-                                                        color: isTallEnough
-                                                            ? Colors.white
-                                                            : (isDark ? Colors.white70 : Colors.black87),
-                                                        shadows: isTallEnough
-                                                            ? const [
-                                                                Shadow(
-                                                                  color: Colors.black87,
-                                                                  blurRadius: 3,
-                                                                  offset: Offset(0, 1),
-                                                                ),
-                                                              ]
-                                                            : null,
+                                        // 3D Pillar Container
+                                        Container(
+                                          width: 56,
+                                          height: chartHeight,
+                                          decoration: BoxDecoration(
+                                            color: (isDark ? const Color(0xFF221F1C) : const Color(0xFFEDE7DA)).withAlpha(180),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                                              width: 1.2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withAlpha(isDark ? 50 : 20),
+                                                offset: const Offset(0, 2),
+                                                blurRadius: 3,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Stack(
+                                            alignment: Alignment.bottomCenter,
+                                            children: [
+                                              // Raised 3D Pillar fill
+                                              Container(
+                                                width: 56,
+                                                height: filledHeight,
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(7),
+                                                  gradient: LinearGradient(
+                                                    begin: Alignment.centerLeft,
+                                                    end: Alignment.centerRight,
+                                                    colors: [
+                                                      Color.lerp(d.color, Colors.white, 0.38)!,
+                                                      d.color,
+                                                      Color.lerp(d.color, Colors.black, 0.35)!,
+                                                    ],
+                                                    stops: const [0.0, 0.45, 1.0],
+                                                  ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: d.color.withAlpha(80),
+                                                      offset: const Offset(0, -1),
+                                                      blurRadius: 4,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+
+                                              // Subject Label: inside pillar, horizontally formatted!
+                                              Positioned(
+                                                bottom: isTallEnough ? (filledHeight / 2) - 14 : 6,
+                                                left: 2,
+                                                right: 2,
+                                                child: IgnorePointer(
+                                                  child: SizedBox(
+                                                    width: 52,
+                                                    height: 28,
+                                                    child: Center(
+                                                      child: FittedBox(
+                                                        fit: BoxFit.scaleDown,
+                                                        alignment: Alignment.center,
+                                                        child: Text(
+                                                          d.label,
+                                                          textAlign: TextAlign.center,
+                                                          maxLines: 2,
+                                                          style: TextStyle(
+                                                            fontSize: 11,
+                                                            fontWeight: FontWeight.w900,
+                                                            height: 1.05,
+                                                            letterSpacing: 0.3,
+                                                            color: isTallEnough
+                                                                ? Colors.white
+                                                                : (isDark ? Colors.white70 : Colors.black87),
+                                                            shadows: isTallEnough
+                                                                ? const [
+                                                                    Shadow(
+                                                                      color: Colors.black87,
+                                                                      blurRadius: 3,
+                                                                      offset: Offset(0, 1),
+                                                                    ),
+                                                                  ]
+                                                                : null,
+                                                          ),
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
                                                 ),
                                               ),
-                                            ),
+                                            ],
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                      ],
                                     ),
-                                    const SizedBox(height: 6),
-                                  ],
+                                  ),
                                 ),
-                              ),
-                            ),
+                              );
+                            }).toList(),
                           );
-                        }).toList(),
+                        },
                       ),
                     ),
                   ),

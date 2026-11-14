@@ -57,6 +57,16 @@ class UserSettings {
     }
   }
 
+  bool get isSemesterEnded {
+    if (!hasSemesterRange) return false;
+    final end = semesterEndDateTime;
+    if (end == null) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final endDay = DateTime(end.year, end.month, end.day);
+    return today.isAfter(endDay);
+  }
+
   bool isDateInSemester(DateTime date) {
     if (!hasSemesterRange) return true;
     final start = semesterStartDateTime;

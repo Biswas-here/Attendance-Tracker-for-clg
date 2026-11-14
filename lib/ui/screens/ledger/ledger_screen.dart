@@ -15,12 +15,18 @@ import '../../widgets/paper_button.dart';
 import '../../widgets/paper_card.dart';
 import '../../widgets/paper_progress_bar.dart';
 import '../../widgets/paper_stamp.dart';
+import '../../widgets/staggered_entrance.dart';
 import '../settings/csv_import_screen.dart';
 import '../settings/settings_screen.dart';
 
 class LedgerScreen extends StatefulWidget {
   final ValueChanged<int>? onSwitchTab;
-  const LedgerScreen({super.key, this.onSwitchTab});
+  final bool isTabActive;
+  const LedgerScreen({
+    super.key,
+    this.onSwitchTab,
+    this.isTabActive = true,
+  });
 
   @override
   State<LedgerScreen> createState() => _LedgerScreenState();
@@ -31,6 +37,17 @@ class _LedgerScreenState extends State<LedgerScreen> {
   late final PageController _heroPageController;
   int _activeHeroPage = 0;
   String? _selectedActiveSessionId;
+  int _animTrigger = 0;
+
+  @override
+  void didUpdateWidget(covariant LedgerScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isTabActive && !oldWidget.isTabActive) {
+      setState(() {
+        _animTrigger++;
+      });
+    }
+  }
 
   /// Returns true only when the semester end date has fully passed —
   /// i.e., either today is strictly after the end day, OR it IS the end day
@@ -225,23 +242,28 @@ class _LedgerScreenState extends State<LedgerScreen> {
           padding: const EdgeInsets.only(bottom: 100, top: 4),
           children: [
             // ── INTEGRATED HERO MODULE (ACTIVE CLASS + OVERALL ATTENDANCE) ──
-            _buildIntegratedHeroModule(
-              activeClasses: activeClasses,
-              subjectsMap: subjectsMap,
-              overallStats: overallStats,
-              target: target,
-              attendance: attendance,
-              settings: settingsProv.settings,
-              isDark: isDark,
-              allSessions: allSessions,
+            StaggeredEntrance(
+              index: 0,
+              child: _buildIntegratedHeroModule(
+                activeClasses: activeClasses,
+                subjectsMap: subjectsMap,
+                overallStats: overallStats,
+                target: target,
+                attendance: attendance,
+                settings: settingsProv.settings,
+                isDark: isDark,
+                allSessions: allSessions,
+              ),
             ),
 
             const SizedBox(height: 12),
 
             // ── SCHEDULE SECTION WITH [<] [>] DAY NAVIGATION ──────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
-              child: Row(
+            StaggeredEntrance(
+              index: 1,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+                child: Row(
                 children: [
                   const Icon(Icons.today_rounded, size: 20, color: AppColors.craftTeal),
                   const SizedBox(width: 8),
@@ -346,10 +368,13 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 ],
               ),
             ),
+          ),
 
-            // Schedule sessions or empty state
-            if (scheduleSessions.isEmpty) ...[
-              Padding(
+          // Schedule sessions or empty state
+          if (scheduleSessions.isEmpty) ...[
+            StaggeredEntrance(
+              index: 2,
+              child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: PaperCard(
                   padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
@@ -373,14 +398,19 @@ class _LedgerScreenState extends State<LedgerScreen> {
                   ),
                 ),
               ),
-            ] else ...[
-              ...scheduleSessions.map((session) {
-                final sub = subjectsMap[session.subjectId];
-                final roomStr = (sub != null)
-                    ? (sub.room != null && sub.room!.trim().isNotEmpty ? sub.room!.trim() : null)
-                    : (session.room != null && session.room!.trim().isNotEmpty ? session.room!.trim() : null);
+            ),
+          ] else ...[
+            ...scheduleSessions.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final session = entry.value;
+              final sub = subjectsMap[session.subjectId];
+              final roomStr = (sub != null)
+                  ? (sub.room != null && sub.room!.trim().isNotEmpty ? sub.room!.trim() : null)
+                  : (session.room != null && session.room!.trim().isNotEmpty ? session.room!.trim() : null);
 
-                return Padding(
+              return StaggeredEntrance(
+                index: 2 + (idx < 5 ? idx : 5),
+                child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: PaperCard(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -499,9 +529,10 @@ class _LedgerScreenState extends State<LedgerScreen> {
                       ],
                     ),
                   ),
-                );
-              }),
-            ],
+                ),
+              );
+            }),
+          ],
 
             // ── END OF SEMESTER TIMETABLE CREATION / SETUP CARD ─────────────
             if (isSemesterComplete) ...[
@@ -529,12 +560,15 @@ class _LedgerScreenState extends State<LedgerScreen> {
     if (activeClasses.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: _buildOverallAttendanceCard(
-          overallStats: overallStats,
-          target: target,
-          settings: settings,
-          isDark: isDark,
-          allSessions: allSessions,
+        child: SizedBox(
+          height: 236,
+          child: _buildOverallAttendanceCard(
+            overallStats: overallStats,
+            target: target,
+            settings: settings,
+            isDark: isDark,
+            allSessions: allSessions,
+          ),
         ),
       );
     }
@@ -550,7 +584,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 318,
+          height: 252,
           child: PageView(
             controller: _heroPageController,
             onPageChanged: (idx) {
@@ -682,7 +716,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
     return PaperCard(
       showTape: true,
       tapeColor: AppColors.craftOrange,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       borderColor: AppColors.craftOrange.withAlpha(160),
       color: isDark ? const Color(0xFF2C251D) : const Color(0xFFFFF9F0),
       child: Column(
@@ -738,12 +772,12 @@ class _LedgerScreenState extends State<LedgerScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
           // Multi-session selector if overlapping classes
           if (activeSessions.length > 1) ...[
             Container(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black26 : Colors.white60,
@@ -760,7 +794,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         setState(() => _selectedActiveSessionId = s.id);
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 5),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.craftTeal : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
@@ -793,22 +827,22 @@ class _LedgerScreenState extends State<LedgerScreen> {
                     subjectName: subject?.name ?? 'Class',
                     subjectId: subject?.id,
                     colorValue: subject?.colorValue ?? 0xFFE65100,
-                    size: 58,
-                    iconSize: 32,
+                    size: 46,
+                    iconSize: 26,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Text(
                     subject?.name ?? 'Scheduled Class',
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 24,
+                      fontSize: 20,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Wrap(
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -821,7 +855,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           children: [
                             Icon(
                               Icons.meeting_room_outlined,
-                              size: 13,
+                              size: 12,
                               color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                             ),
                             const SizedBox(width: 4),
@@ -830,7 +864,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                                   ? activeRoomStr
                                   : 'Room $activeRoomStr',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w700,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                               ),
@@ -843,14 +877,14 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           children: [
                             Icon(
                               Icons.person_outline_rounded,
-                              size: 13,
+                              size: 12,
                               color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               subject.teacher!.trim(),
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                               ),
@@ -923,15 +957,21 @@ class _LedgerScreenState extends State<LedgerScreen> {
                     title: 'PRESENT',
                     color: AppColors.present,
                     icon: Icons.check_circle_rounded,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    iconSize: 22,
+                    fontSize: 13,
                     onTap: () => onMark(AttendanceStatus.present),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: AttendanceActionButton(
                     title: 'ABSENT',
                     color: AppColors.absent,
                     icon: Icons.cancel_rounded,
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                    iconSize: 22,
+                    fontSize: 13,
                     onTap: () => onMark(AttendanceStatus.absent),
                   ),
                 ),
@@ -983,181 +1023,217 @@ class _LedgerScreenState extends State<LedgerScreen> {
     return PaperCard(
       showTape: true,
       tapeColor: AppColors.kraftGold,
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              PaperCircularProgress(
-                percentage: overallStats.percentage,
-                targetPercentage: target,
-                size: 148,
-                strokeWidth: 13,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: isSemesterComplete
+          ? SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: _buildOverallCardBody(
+                overallStats: overallStats,
+                target: target,
+                isDark: isDark,
+                isSemesterComplete: true,
+                roastTag: roastTag,
+                roastColor: roastColor,
+                roastMessage: roastMessage,
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'OVERALL ATTENDANCE',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.1,
-                        color: isDark
-                            ? AppColors.darkTextSecondary
-                            : AppColors.lightTextSecondary,
-                      ),
+            )
+          : _buildOverallCardBody(
+              overallStats: overallStats,
+              target: target,
+              isDark: isDark,
+              isSemesterComplete: false,
+              roastTag: roastTag,
+              roastColor: roastColor,
+              roastMessage: roastMessage,
+            ),
+    );
+  }
+
+  Widget _buildOverallCardBody({
+    required OverallAttendanceStats overallStats,
+    required double target,
+    required bool isDark,
+    required bool isSemesterComplete,
+    required String roastTag,
+    required Color roastColor,
+    required String roastMessage,
+  }) {
+    return Column(
+      mainAxisAlignment: isSemesterComplete ? MainAxisAlignment.start : MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            PaperCircularProgress(
+              percentage: overallStats.percentage,
+              targetPercentage: target,
+              size: 130,
+              strokeWidth: 11.5,
+              animTrigger: _animTrigger,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'OVERALL ATTENDANCE',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                      color: isDark
+                          ? AppColors.darkTextSecondary
+                          : AppColors.lightTextSecondary,
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          '${overallStats.totalPresent}',
-                          style: const TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w900,
-                            color: AppColors.present,
-                          ),
-                        ),
-                        Text(
-                          ' / ${overallStats.totalMarked}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.lightTextSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'attended',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? AppColors.darkTextTertiary
-                                : AppColors.lightTextTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (overallStats.totalMarked > 0) ...[
-                      const SizedBox(height: 2),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
                       Text(
-                        '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
+                        '${overallStats.totalPresent}',
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.present,
+                        ),
+                      ),
+                      Text(
+                        ' / ${overallStats.totalMarked}',
                         style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? AppColors.darkTextSecondary
+                              : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Text(
+                        'attended',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
                           color: isDark
                               ? AppColors.darkTextTertiary
                               : AppColors.lightTextTertiary,
                         ),
                       ),
                     ],
-                    const SizedBox(height: 8),
-                    _buildTargetStatusBadge(
-                      overallStats: overallStats,
-                      target: target,
-                      isDark: isDark,
+                  ),
+                  if (overallStats.totalMarked > 0) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? AppColors.darkTextTertiary
+                            : AppColors.lightTextTertiary,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  _buildTargetStatusBadge(
+                    overallStats: overallStats,
+                    target: target,
+                    isDark: isDark,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        // IF SEMESTER COMPLETED: Show Congratulations & Gen-Z Exam Roasts!
+        if (isSemesterComplete) ...[
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF2C251D), const Color(0xFF382F24)]
+                    : [const Color(0xFFFFF9ED), const Color(0xFFF9F1DF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.kraftGold, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.kraftGold.withAlpha(isDark ? 40 : 25),
+                  offset: const Offset(0, 3),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text('🎓', style: TextStyle(fontSize: 18)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'CONGRATULATIONS ON COMPLETING THE SEMESTER!',
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          color: isDark ? AppColors.kraftGold : const Color(0xFF916A00),
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // IF SEMESTER COMPLETED: Show Congratulations & Gen-Z Exam Roasts!
-          if (isSemesterComplete) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: isDark
-                      ? [const Color(0xFF2C251D), const Color(0xFF382F24)]
-                      : [const Color(0xFFFFF9ED), const Color(0xFFF9F1DF)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.kraftGold, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.kraftGold.withAlpha(isDark ? 40 : 25),
-                    offset: const Offset(0, 3),
-                    blurRadius: 6,
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: roastColor.withAlpha(isDark ? 50 : 25),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: roastColor.withAlpha(120)),
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text('🎓', style: TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'CONGRATULATIONS ON COMPLETING THE SEMESTER!',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 0.8,
-                            color: isDark ? AppColors.kraftGold : const Color(0xFF916A00),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: roastColor.withAlpha(isDark ? 50 : 25),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: roastColor.withAlpha(120)),
-                    ),
-                    child: Text(
-                      roastTag,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
-                        color: roastColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    roastMessage,
+                  child: Text(
+                    roastTag,
                     style: TextStyle(
-                      fontSize: 12,
-                      height: 1.45,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: roastColor,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  roastMessage,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                  ),
+                ),
+              ],
             ),
-          ] else ...[
-            // Normal in-semester insight banner
-            _buildAttendanceInsightBanner(
-              overallStats: overallStats,
-              target: target,
-              isDark: isDark,
-            ),
-          ],
+          ),
+        ] else ...[
+          _buildAttendanceInsightBanner(
+            overallStats: overallStats,
+            target: target,
+            isDark: isDark,
+          ),
         ],
-      ),
+      ],
     );
   }
 

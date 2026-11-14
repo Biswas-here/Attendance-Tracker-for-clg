@@ -6,6 +6,7 @@ import '../../../providers/attendance_provider.dart';
 import '../../../providers/settings_provider.dart';
 import '../../widgets/paper_card.dart';
 import '../../widgets/paper_progress_bar.dart';
+import '../../widgets/staggered_entrance.dart';
 import 'add_edit_subject_dialog.dart';
 import 'subject_detail_screen.dart';
 
@@ -91,9 +92,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       body: Column(
         children: [
           // Search bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: TextField(
+          StaggeredEntrance(
+            index: 0,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: TextField(
               controller: _searchController,
               onChanged: (val) => setState(() => _searchQuery = val),
               decoration: InputDecoration(
@@ -126,6 +129,7 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
               ),
             ),
           ),
+        ),
 
           Expanded(
             child: allSubjects.isEmpty
@@ -189,9 +193,11 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                           final subTarget = subject.targetPercentage ?? settings.defaultAttendanceTarget;
                           final meetsTarget = stats.meetsTarget(subTarget);
 
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                            child: PaperCard(
+                          return StaggeredEntrance(
+                            index: 1 + (index < 6 ? index : 6),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                              child: PaperCard(
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -282,8 +288,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                                 ],
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        );
+                      },
                       ),
           ),
         ],

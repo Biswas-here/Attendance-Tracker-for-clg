@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart';
-import '../../../core/database/app_database.dart';
-import '../../../core/models/class_session.dart';
 import '../../../core/models/subject.dart';
 import '../../../core/services/haptic_service.dart';
 import '../../../core/theme/app_colors.dart';
@@ -156,10 +153,23 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
     );
 
     final ymd = AppDateUtils.formatDateYmd(_selectedDate);
+    final formattedStart = _formatTime(_startTime);
     final exists = _finalsList.any(
-      (e) => AppDateUtils.formatDateYmd(e.date) == ymd && e.subjectId == sub.id && e.kind == _selectedKind,
+      (e) => AppDateUtils.formatDateYmd(e.date) == ymd &&
+          e.subjectId == sub.id &&
+          e.kind == _selectedKind &&
+          e.startTime == formattedStart,
     );
-    if (exists) return;
+    if (exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This exam paper is already added for this date and time.'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _finalsList.add(FinalExamItem(
@@ -172,7 +182,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
         endTime: _formatTime(_endTime),
         location: _locationController.text.trim().isNotEmpty
             ? _locationController.text.trim()
-            : (_selectedKind == FinalExamKind.lab ? 'Lab Room' : 'Exam Hall'),
+            : (_selectedKind == FinalExamKind.lab ? 'Lab 1' : 'Exam Hall'),
       ));
       _finalsList.sort((a, b) => a.date.compareTo(b.date));
       _selectedDate = _selectedDate.add(const Duration(days: 2));
@@ -186,47 +196,20 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
     final attendance = context.read<AttendanceProvider>();
     final settings = context.read<SettingsProvider>().settings;
 
-    // 1. Delete previous final exam sessions on any of these dates to prevent duplicates
-    final dates = _finalsList.map((e) => AppDateUtils.formatDateYmd(e.date)).toSet();
-    for (final d in dates) {
-      await AppDatabase.instance.deleteExamSessionsForDate(d);
-    }
+    final finalsData = _finalsList.map((e) => {
+      'date': AppDateUtils.formatDateYmd(e.date),
+      'subjectId': e.subjectId,
+      'subjectName': e.subjectName,
+      'kind': e.kind == FinalExamKind.lab ? 'lab' : 'theory',
+      'startTime': e.startTime,
+      'endTime': e.endTime,
+      'location': e.location,
+    }).toList();
 
-    // 2. Insert new final exam sessions
-    int created = 0;
-    for (final exam in _finalsList) {
-      final ymd = AppDateUtils.formatDateYmd(exam.date);
-      final kindLabel = exam.kind == FinalExamKind.lab ? 'Lab Exam' : 'Theory Exam';
-      final session = ClassSession(
-        id: const Uuid().v4(),
-        subjectId: exam.subjectId,
-        date: ymd,
-        startTime: exam.startTime,
-        endTime: exam.endTime,
-        room: '${exam.location} • $kindLabel',
-        status: AttendanceStatus.unmarked,
-        isExam: true,
-      );
-      await AppDatabase.instance.insertSession(session);
-      created++;
-    }
-
-    // 3. Save configuration
-    await attendance.saveFinalsSchedule({
-      'finals': _finalsList.map((e) => {
-        'date': AppDateUtils.formatDateYmd(e.date),
-        'subjectId': e.subjectId,
-        'subjectName': e.subjectName,
-        'kind': e.kind == FinalExamKind.lab ? 'lab' : 'theory',
-        'startTime': e.startTime,
-        'endTime': e.endTime,
-        'location': e.location,
-      }).toList(),
-      'updatedAt': DateTime.now().toIso8601String(),
-    });
-
-    await attendance.loadData(showLoading: false, userSettings: settings);
-    await attendance.syncAllUpcomingNotifications(settings);
+    final created = await attendance.applyFinalsSchedule(
+      finals: finalsData,
+      settings: settings,
+    );
 
     if (mounted) {
       Navigator.pop(context);
@@ -260,14 +243,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
     );
     if (confirm != true) return;
 
-    final dates = _finalsList.map((e) => AppDateUtils.formatDateYmd(e.date)).toSet();
-    for (final d in dates) {
-      await AppDatabase.instance.deleteExamSessionsForDate(d);
-    }
-
-    await attendance.saveFinalsSchedule({'finals': []});
-    await attendance.loadData(showLoading: false, userSettings: settings);
-    await attendance.syncAllUpcomingNotifications(settings);
+    await attendance.clearFinalsSchedule(settings: settings);
 
     if (mounted) {
       Navigator.pop(context);

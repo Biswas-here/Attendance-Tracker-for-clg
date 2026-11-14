@@ -794,6 +794,11 @@ class AttendanceProvider with ChangeNotifier {
     int examSessionsCreated = 0;
     int gapHolidaysAdded = 0;
 
+    // Clear existing exam sessions on all new exam dates first before inserting
+    for (final d in newExamDateStrs) {
+      await AppDatabase.instance.deleteExamSessionsForDate(d);
+    }
+
     // 2. Process each new exam date
     for (final exam in exams) {
       final dateStr = exam['date'] as String;
@@ -801,9 +806,6 @@ class AttendanceProvider with ChangeNotifier {
       final room = (exam['room'] as String?)?.trim().isNotEmpty == true
           ? (exam['room'] as String).trim()
           : 'Exam Hall';
-
-      // Remove existing exam sessions on this date first to avoid duplicates
-      await AppDatabase.instance.deleteExamSessionsForDate(dateStr);
 
       if (!isHalfDay) {
         // Full-day exam: Remove all regular non-exam classes on that date
@@ -896,6 +898,83 @@ class AttendanceProvider with ChangeNotifier {
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_prefKeyExamSchedule);
+
+    await loadData(showLoading: false, userSettings: settings);
+    await syncAllUpcomingNotifications(settings);
+  }
+
+  /// Apply Semester End Finals Schedule (Theory & Lab Exams)
+  Future<int> applyFinalsSchedule({
+    required List<Map<String, dynamic>> finals,
+    required UserSettings settings,
+  }) async {
+    // 1. Gather all dates from previous saved finals AND new finals
+    final prevSaved = await getSavedFinalsSchedule();
+    final prevDates = (prevSaved?['finals'] as List?)
+            ?.map((e) => (e as Map)['date'] as String)
+            .toSet() ??
+        <String>{};
+    final newDates = finals.map((e) => e['date'] as String).toSet();
+    final allDatesToClean = {...prevDates, ...newDates};
+
+    // 2. Clear ALL existing exam sessions on all affected dates BEFORE the insertion loop
+    for (final d in allDatesToClean) {
+      await AppDatabase.instance.deleteExamSessionsForDate(d);
+    }
+
+    // 3. Insert all new final exam sessions (both lab and theory)
+    int created = 0;
+    for (final exam in finals) {
+      final ymd = exam['date'] as String;
+      final subjectId = exam['subjectId'] as String;
+      final kindStr = exam['kind'] as String? ?? 'theory';
+      final kindLabel = kindStr == 'lab' ? 'Lab Exam' : 'Theory Exam';
+      final location = (exam['location'] as String?)?.trim().isNotEmpty == true
+          ? (exam['location'] as String).trim()
+          : (kindStr == 'lab' ? 'Lab Room' : 'Exam Hall');
+      final startTime = exam['startTime'] as String? ?? (kindStr == 'lab' ? '09:30' : '10:00');
+      final endTime = exam['endTime'] as String? ?? (kindStr == 'lab' ? '12:30' : '13:00');
+
+      final session = ClassSession(
+        id: const Uuid().v4(),
+        subjectId: subjectId,
+        date: ymd,
+        startTime: startTime,
+        endTime: endTime,
+        room: '$location • $kindLabel',
+        status: AttendanceStatus.unmarked,
+        isExam: true,
+      );
+      await AppDatabase.instance.insertSession(session);
+      created++;
+    }
+
+    // 4. Save configuration
+    await saveFinalsSchedule({
+      'finals': finals,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+
+    // 5. Reload data
+    await loadData(showLoading: false, userSettings: settings);
+    await syncAllUpcomingNotifications(settings);
+    return created;
+  }
+
+  /// Reset / Clear Semester Finals Schedule
+  Future<void> clearFinalsSchedule({required UserSettings settings}) async {
+    final prevSaved = await getSavedFinalsSchedule();
+    final prevDates = (prevSaved?['finals'] as List?)
+            ?.map((e) => (e as Map)['date'] as String)
+            .toSet() ??
+        <String>{};
+
+    for (final d in prevDates) {
+      await AppDatabase.instance.deleteExamSessionsForDate(d);
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKeyFinalsSchedule);
 
     await loadData(showLoading: false, userSettings: settings);
     await syncAllUpcomingNotifications(settings);

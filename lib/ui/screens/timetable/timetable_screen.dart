@@ -1127,6 +1127,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final status = attendance.getDateStatus(cellDate, settings);
     final isHoliday = isInSemester && HolidayUtils.isHoliday(cellDate, settings);
     final isExamDay = attendance.isExamDate(cellDate);
+    final examAccentColor = isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
 
     return GestureDetector(
       onTap: () => attendance.setSelectedDate(cellDate),
@@ -1144,7 +1145,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       : (isHoliday
                           ? (isDark ? Colors.black26 : const Color(0xFFF3ECE0))
                           : (isExamDay
-                              ? (isDark ? const Color(0xFF2E2A23) : const Color(0xFFFFF8E7))
+                              ? (isDark ? const Color(0xFF2E243A) : const Color(0xFFF5EDFF))
                               : Colors.transparent)))),
           borderRadius: BorderRadius.circular(10),
           border: isToday && !isSelected
@@ -1152,7 +1153,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               : (isSelected
                   ? Border.all(color: AppColors.craftTeal, width: 1.5)
                   : (isExamDay && !isSelected
-                      ? Border.all(color: (isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706)).withAlpha(120), width: 1.2)
+                      ? Border.all(color: examAccentColor.withAlpha(160), width: 1.4)
                       : (isHoliday && !isSelected
                           ? Border.all(color: AppColors.kraftGold.withAlpha(70), width: 1)
                           : (!isInSemester && !isSelected
@@ -1175,9 +1176,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               Icon(
                 Icons.auto_stories_rounded,
                 size: 9.5,
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706)),
+                color: isSelected ? Colors.white : examAccentColor,
               ),
               const SizedBox(height: 1),
             ],
@@ -1192,7 +1191,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
                         ? (isDark ? Colors.white30 : Colors.black26)
                         : (isHoliday
                             ? AppColors.kraftBrown
-                            : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary))),
+                            : (isExamDay
+                                ? examAccentColor
+                                : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary)))),
               ),
             ),
             const SizedBox(height: 2),
@@ -1223,9 +1224,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
       case 'red':
         dotColor = isSelected ? const Color(0xFFFF8A80) : AppColors.absent;
         break;
-      case 'partial':
-        dotColor = isSelected ? const Color(0xFFFFD54F) : AppColors.kraftGold;
-        break;
       case 'unmarked':
         dotColor = isSelected ? Colors.white60 : AppColors.unmarked;
         break;
@@ -1247,6 +1245,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Widget _buildCalendarLegend(bool isDark) {
+    final examAccentColor = isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
+
     return Container(
       padding: const EdgeInsets.only(top: 10),
       decoration: BoxDecoration(
@@ -1262,12 +1262,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
         children: [
           _legendItem(AppColors.present, 'Attended'),
           _legendItem(AppColors.absent, 'Missed'),
-          _legendItem(AppColors.kraftGold, 'Partial'),
           _legendItem(AppColors.unmarked, 'Unmarked'),
           _legendItem(AppColors.kraftGold.withAlpha(160), 'Holiday'),
           _legendIconItem(
             Icons.auto_stories_rounded,
-            isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706),
+            examAccentColor,
             'Exam',
           ),
         ],

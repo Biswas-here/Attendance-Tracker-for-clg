@@ -8,8 +8,8 @@ import '../../../providers/attendance_provider.dart';
 import '../../../providers/settings_provider.dart';
 
 enum ExamScheduleType {
-  fullDay, // Exam then holiday (no regular classes)
-  halfDay, // Exam during specific hours (classes before/after)
+  fullDay, // Full Day Exam (no regular classes)
+  halfDay, // Half-Day Exam (classes before/after)
 }
 
 class ExamEntryItem {
@@ -84,7 +84,6 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
     );
 
     final ymd = AppDateUtils.formatDateYmd(_newExamDate);
-    // Avoid duplicate exams on same date for same subject
     final exists = _examList.any(
       (e) => AppDateUtils.formatDateYmd(e.date) == ymd && e.subjectId == sub.id,
     );
@@ -98,9 +97,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
         colorValue: sub.colorValue,
         room: _roomController.text.trim().isNotEmpty ? _roomController.text.trim() : 'Exam Hall',
       ));
-      // Sort exams chronologically
       _examList.sort((a, b) => a.date.compareTo(b.date));
-      // Automatically advance default new date to next day
       _newExamDate = _newExamDate.add(const Duration(days: 2));
     });
     HapticService.selection();
@@ -208,48 +205,51 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
     final gapCount = _calculateGapDaysCount();
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       backgroundColor: isDark ? const Color(0xFF262421) : const Color(0xFFFAF7F0),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: 480,
-          maxHeight: MediaQuery.of(context).size.height * 0.88,
+          maxWidth: 420,
+          maxHeight: MediaQuery.of(context).size.height * 0.78,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // ── HEADER ───────────────────────────────────────────────
+            // ── COMPACT HEADER ─────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 12, 10, 8),
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
                       color: AppColors.craftTeal.withAlpha(isDark ? 45 : 30),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.school_rounded, color: AppColors.craftTeal, size: 24),
+                    child: const Icon(Icons.school_rounded, color: AppColors.craftTeal, size: 20),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Exam & Holiday Planner',
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17),
+                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                         ),
                         Text(
                           'Schedule exams and handle class holidays',
-                          style: TextStyle(fontSize: 11, color: AppColors.craftTeal, fontWeight: FontWeight.w600),
+                          style: TextStyle(fontSize: 10.5, color: AppColors.craftTeal, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, size: 20),
+                    icon: const Icon(Icons.close, size: 18),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -257,24 +257,24 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
             ),
             const Divider(height: 1),
 
-            // ── SCROLLABLE BODY ──────────────────────────────────────
+            // ── COMPACT BODY ──────────────────────────────────────────
             Flexible(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 children: [
                   // 1. Choose Holiday / Exam Type
                   const Text(
                     '1. Choose Exam Schedule Type',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   Row(
                     children: [
-                      // Full-day exam (Holiday after exam)
+                      // Full-day exam
                       Expanded(
                         child: _typeSelectionCard(
-                          title: 'Full Day / Exam Then Holiday',
+                          title: 'Full Day Exam',
                           subtitle: 'No regular classes',
                           icon: Icons.beach_access_rounded,
                           isSelected: _scheduleType == ExamScheduleType.fullDay,
@@ -285,7 +285,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                           isDark: isDark,
                         ),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       // Half-day exam
                       Expanded(
                         child: _typeSelectionCard(
@@ -305,12 +305,12 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
 
                   // Half-day timings (Only requested if Half-Day exam!)
                   if (_scheduleType == ExamScheduleType.halfDay) ...[
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF2C2825) : const Color(0xFFF2ECE1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                         ),
@@ -320,58 +320,62 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                         children: [
                           const Row(
                             children: [
-                              Icon(Icons.schedule_rounded, size: 16, color: AppColors.craftTeal),
-                              SizedBox(width: 6),
-                              Text(
-                                'Exam Hours (Classes during this time are cancelled)',
-                                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+                              Icon(Icons.schedule_rounded, size: 14, color: AppColors.craftTeal),
+                              SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  'Exam Hours (Classes in window cancelled)',
+                                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 10.5),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           Row(
                             children: [
                               Expanded(
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(6),
                                   onTap: () => _pickHalfDayTime(true),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: isDark ? const Color(0xFF201D1A) : Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Text('Start:', style: TextStyle(fontSize: 12)),
+                                        const Text('Start:', style: TextStyle(fontSize: 11)),
                                         Text(
                                           _formatTime(_halfDayStartTime),
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: InkWell(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(6),
                                   onTap: () => _pickHalfDayTime(false),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: isDark ? const Color(0xFF201D1A) : Colors.white,
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        const Text('End:', style: TextStyle(fontSize: 12)),
+                                        const Text('End:', style: TextStyle(fontSize: 11)),
                                         Text(
                                           _formatTime(_halfDayEndTime),
-                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                                         ),
                                       ],
                                     ),
@@ -385,21 +389,21 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                     ),
                   ],
 
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 10),
 
                   // 2. Add Exam Dates & Subject Labels
                   const Text(
                     '2. Add Exam Dates & Subject Labels',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // Date picker & Subject picker row
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF2C2825) : const Color(0xFFF2ECE1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                       ),
@@ -412,7 +416,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                             Expanded(
                               flex: 3,
                               child: InkWell(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(6),
                                 onTap: () async {
                                   final picked = await showDatePicker(
                                     context: context,
@@ -425,19 +429,19 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                                   }
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF201D1A) : Colors.white,
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.craftTeal),
-                                      const SizedBox(width: 6),
+                                      const Icon(Icons.calendar_today_rounded, size: 13, color: AppColors.craftTeal),
+                                      const SizedBox(width: 5),
                                       Expanded(
                                         child: Text(
                                           AppDateUtils.formatShortDate(_newExamDate),
-                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
@@ -446,21 +450,21 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
 
                             // Subject dropdown
                             Expanded(
                               flex: 4,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
                                 decoration: BoxDecoration(
                                   color: isDark ? const Color(0xFF201D1A) : Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: subjects.isEmpty
                                     ? const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 8),
-                                        child: Text('No subjects added', style: TextStyle(fontSize: 12)),
+                                        padding: EdgeInsets.symmetric(vertical: 6),
+                                        child: Text('No subjects added', style: TextStyle(fontSize: 11)),
                                       )
                                     : DropdownButtonHideUnderline(
                                         child: DropdownButton<String>(
@@ -471,7 +475,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                                               value: s.id,
                                               child: Text(
                                                 s.name,
-                                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             );
@@ -485,19 +489,19 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 6),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.craftTeal,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(vertical: 6),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                             ),
                             onPressed: subjects.isNotEmpty ? _addCurrentExam : null,
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('Add This Exam', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                            icon: const Icon(Icons.add, size: 15),
+                            label: const Text('Add This Exam', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5)),
                           ),
                         ),
                       ],
@@ -506,21 +510,21 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
 
                   // Added Exams List
                   if (_examList.isNotEmpty) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       '${_examList.length} Exam${_examList.length == 1 ? "" : "s"} Scheduled:',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.craftTeal),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: AppColors.craftTeal),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     ..._examList.asMap().entries.map((entry) {
                       final idx = entry.key;
                       final exam = entry.value;
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF2C2825) : Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                           ),
@@ -531,24 +535,24 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                               subjectName: exam.subjectName,
                               subjectId: exam.subjectId,
                               colorValue: exam.colorValue,
-                              size: 26,
-                              iconSize: 15,
+                              size: 22,
+                              iconSize: 13,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     exam.subjectName,
-                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
+                                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   Text(
                                     AppDateUtils.formatShortDate(exam.date),
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 10,
                                       color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                                     ),
                                   ),
@@ -556,7 +560,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                               ),
                             ),
                             IconButton(
-                              icon: const Icon(Icons.remove_circle_outline, size: 18, color: Colors.redAccent),
+                              icon: const Icon(Icons.remove_circle_outline, size: 16, color: Colors.redAccent),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               onPressed: () {
@@ -570,14 +574,14 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                     }),
                   ],
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                  // 3. In-Between Study Holidays Toggle (As explicitly requested by user!)
+                  // 3. In-Between Study Holidays Toggle
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF2C2825) : const Color(0xFFF2ECE1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: _excludeGapDays ? AppColors.craftTeal.withAlpha(120) : (isDark ? AppColors.darkBorder : AppColors.lightBorder),
                       ),
@@ -593,12 +597,11 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                                 children: [
                                   Text(
                                     'Exclude Days Between Exams',
-                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5),
                                   ),
-                                  SizedBox(height: 2),
                                   Text(
-                                    'Gap days between exams will count as study leave / holidays (no regular classes counted in attendance).',
-                                    style: TextStyle(fontSize: 11, color: AppColors.craftTeal),
+                                    'Days between exams count as study leave (excluded from attendance).',
+                                    style: TextStyle(fontSize: 9.5, color: AppColors.craftTeal),
                                   ),
                                 ],
                               ),
@@ -614,21 +617,21 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                           ],
                         ),
                         if (_excludeGapDays && gapCount > 0) ...[
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                             decoration: BoxDecoration(
                               color: AppColors.craftTeal.withAlpha(isDark ? 45 : 30),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.check_circle_rounded, size: 14, color: AppColors.craftTeal),
+                                const Icon(Icons.check_circle_rounded, size: 12, color: AppColors.craftTeal),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '$gapCount in-between day(s) will be excluded from attendance',
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: AppColors.craftTeal),
+                                  '$gapCount gap day(s) excluded from attendance',
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 10, color: AppColors.craftTeal),
                                 ),
                               ],
                             ),
@@ -638,18 +641,13 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
-
                   // 4. Record Exam Sessions Toggle
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
+                    dense: true,
                     title: const Text(
                       'Add exams as sessions to mark attendance',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-                    ),
-                    subtitle: const Text(
-                      'Puts an exam class on your ledger so you can mark Present/Absent for each exam',
-                      style: TextStyle(fontSize: 11),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
                     ),
                     activeThumbColor: AppColors.craftTeal,
                     value: _createExamSessions,
@@ -659,35 +657,35 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
               ),
             ),
 
-            // ── FOOTER ACTIONS ─────────────────────────────────────────
+            // ── COMPACT FOOTER ACTIONS ─────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
+              padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
               child: Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     flex: 2,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.craftTeal,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
                       onPressed: _examList.isNotEmpty ? _applySchedule : null,
                       child: Text(
                         _examList.isEmpty ? 'Add Exams Above' : 'Apply Exam Schedule (${_examList.length})',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                       ),
                     ),
                   ),
@@ -714,41 +712,48 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.craftTeal.withAlpha(isDark ? 40 : 25)
               : (isDark ? const Color(0xFF2C2825) : Colors.white),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: borderColor, width: isSelected ? 1.8 : 1.0),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor, width: isSelected ? 1.6 : 1.0),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
             Icon(
               icon,
-              size: 20,
+              size: 16,
               color: isSelected ? AppColors.craftTeal : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
             ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 11,
-                color: isSelected ? AppColors.craftTeal : null,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 10,
-                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 11,
+                      color: isSelected ? AppColors.craftTeal : null,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
           ],

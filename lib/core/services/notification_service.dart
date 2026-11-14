@@ -518,8 +518,19 @@ class NotificationService {
         sessionId: 'semester_completed:$endStr',
         includeActions: false,
       );
-    } else if (settings.isSemesterEnded || (semesterSessions.isNotEmpty && semesterSessions.every((s) => s.endDateTime.isBefore(now)))) {
-      await showSemesterCompletionNotification(semesterEndDate: endStr);
+    }
+  }
+
+  /// If user opened the app and viewed the in-app congratulations message,
+  /// cancel any pending scheduled push notification and mark it as handled so it never fires.
+  Future<void> dismissSemesterCompletionNotification(String semesterEndDate) async {
+    try {
+      await _notificationsPlugin.cancel(id: semesterCompletionNotificationId);
+      final prefs = await SharedPreferences.getInstance();
+      final notifKey = 'semester_completion_notified_$semesterEndDate';
+      await prefs.setBool(notifKey, true);
+    } catch (e) {
+      debugPrint('Error dismissing semester completion notification: $e');
     }
   }
 
@@ -558,20 +569,17 @@ class NotificationService {
     }
   }
 
-  /// Check and show congratulations notification if semester has ended and not yet shown
+  /// When user opens the app and semester is completed, dismiss pending notification
+  /// since the user is actively viewing the in-app congratulations message.
   Future<void> checkAndShowSemesterCompletionNotification({
     required UserSettings settings,
     required List<ClassSession> allSessions,
   }) async {
-    if (!settings.notificationsEnabled || !settings.hasSemesterRange) return;
+    if (!settings.hasSemesterRange) return;
     final endStr = settings.semesterEndDate;
     if (endStr == null || endStr.isEmpty) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final notifKey = 'semester_completion_notified_$endStr';
-    if (prefs.getBool(notifKey) == true) return;
-
-    await showSemesterCompletionNotification(semesterEndDate: endStr);
+    await dismissSemesterCompletionNotification(endStr);
   }
 
   Future<void> cancelSessionReminder(String sessionId) async {

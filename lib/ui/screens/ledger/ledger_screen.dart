@@ -5,6 +5,7 @@ import '../../../core/models/class_session.dart';
 import '../../../core/models/subject.dart';
 import '../../../core/models/user_settings.dart';
 import '../../../core/services/haptic_service.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/attendance_calculator.dart';
 import '../../../core/utils/date_utils.dart';
@@ -1052,6 +1053,9 @@ class _LedgerScreenState extends State<LedgerScreen> {
     }
 
     if (isSemesterComplete) {
+      if (settings.semesterEndDate != null && settings.semesterEndDate!.isNotEmpty) {
+        NotificationService.instance.dismissSemesterCompletionNotification(settings.semesterEndDate!);
+      }
       return PaperCard(
         showTape: true,
         tapeColor: AppColors.kraftGold,

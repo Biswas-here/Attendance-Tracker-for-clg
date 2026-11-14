@@ -10,6 +10,7 @@ import '../../widgets/paper_card.dart';
 import '../../widgets/paper_stamp.dart';
 import '../../widgets/staggered_entrance.dart';
 import 'exam_schedule_dialog.dart';
+import 'final_exam_dialog.dart';
 import 'schedule_class_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
@@ -276,10 +277,18 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   void _showExamScheduleDialog(DateTime date) {
-    showDialog(
-      context: context,
-      builder: (_) => ExamScheduleDialog(initialDate: date),
-    );
+    final settings = context.read<SettingsProvider>().settings;
+    if (settings.isSemesterEnded) {
+      showDialog(
+        context: context,
+        builder: (_) => FinalExamDialog(initialDate: date),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => ExamScheduleDialog(initialDate: date),
+      );
+    }
   }
 
   @override
@@ -590,8 +599,15 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       ),
                     ),
                     onPressed: () => _showExamScheduleDialog(selectedDate),
-                    icon: const Icon(Icons.school_outlined, size: 16, color: AppColors.craftTeal),
-                    label: const Text('Exam Schedule', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    icon: Icon(
+                      Icons.school_rounded,
+                      size: 16,
+                      color: settingsProv.settings.isSemesterEnded ? AppColors.kraftGold : AppColors.craftTeal,
+                    ),
+                    label: Text(
+                      settingsProv.settings.isSemesterEnded ? 'Finals Schedule' : 'Exam Schedule',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                    ),
                   ),
                 ],
               ),

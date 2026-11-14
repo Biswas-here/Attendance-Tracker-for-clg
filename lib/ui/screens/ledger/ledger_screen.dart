@@ -551,21 +551,40 @@ class _LedgerScreenState extends State<LedgerScreen> {
     required bool isDark,
     required List<ClassSession> allSessions,
   }) {
+    final isSemesterComplete = _checkSemesterComplete(settings, allSessions);
+
     // If NO active class, display only the Overall Attendance Card (no scroll)
     if (activeClasses.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: SizedBox(
-          height: 302,
+      if (isSemesterComplete) {
+        // Natural height so the complete congratulations & roast text is 100% visible without clipping
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: _buildOverallAttendanceCard(
             overallStats: overallStats,
             target: target,
             settings: settings,
             isDark: isDark,
             allSessions: allSessions,
+            fillHeight: false,
           ),
-        ),
-      );
+        );
+      } else {
+        // Normal in-semester: Exact matching generous height (302px) as the Active Class card
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SizedBox(
+            height: 302,
+            child: _buildOverallAttendanceCard(
+              overallStats: overallStats,
+              target: target,
+              settings: settings,
+              isDark: isDark,
+              allSessions: allSessions,
+              fillHeight: true,
+            ),
+          ),
+        );
+      }
     }
 
     // INSIDE ACTIVE CLASS TIME:
@@ -612,7 +631,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 ),
               ),
 
-              // Page 1: Overall Attendance Card
+              // Page 1: Overall Attendance Card (Matching Active Class card height!)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: _buildOverallAttendanceCard(
@@ -621,6 +640,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                   settings: settings,
                   isDark: isDark,
                   allSessions: allSessions,
+                  fillHeight: true,
                 ),
               ),
             ],
@@ -985,6 +1005,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
     required UserSettings settings,
     required bool isDark,
     required List<ClassSession> allSessions,
+    bool fillHeight = false,
   }) {
     final isSemesterComplete = _checkSemesterComplete(settings, allSessions);
 
@@ -1015,212 +1036,288 @@ class _LedgerScreenState extends State<LedgerScreen> {
       roastMessage = 'Who invited the front-row overachiever? Bro has never heard of the word "bunk" in their entire life. Gold star unlocked, now please go touch some grass 🌱. At least the exam invigilator actually knows your face. Go destroy those finals king!';
     }
 
-    return PaperCard(
-      showTape: true,
-      tapeColor: AppColors.kraftGold,
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: _buildOverallCardBody(
-          overallStats: overallStats,
-          target: target,
-          isDark: isDark,
-          isSemesterComplete: isSemesterComplete,
-          roastTag: roastTag,
-          roastColor: roastColor,
-          roastMessage: roastMessage,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOverallCardBody({
-    required OverallAttendanceStats overallStats,
-    required double target,
-    required bool isDark,
-    required bool isSemesterComplete,
-    required String roastTag,
-    required Color roastColor,
-    required String roastMessage,
-  }) {
-    return Column(
-      mainAxisAlignment: isSemesterComplete ? MainAxisAlignment.start : MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+    if (isSemesterComplete) {
+      return PaperCard(
+        showTape: true,
+        tapeColor: AppColors.kraftGold,
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            PaperCircularProgress(
-              percentage: overallStats.percentage,
-              targetPercentage: target,
-              size: isSemesterComplete ? 116 : 138,
-              strokeWidth: isSemesterComplete ? 10.5 : 12.0,
-              animTrigger: _animTrigger,
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'OVERALL ATTENDANCE',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                      color: isDark
-                          ? AppColors.darkTextSecondary
-                          : AppColors.lightTextSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                PaperCircularProgress(
+                  percentage: overallStats.percentage,
+                  targetPercentage: target,
+                  size: 138,
+                  strokeWidth: 12.0,
+                  animTrigger: _animTrigger,
+                ),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '${overallStats.totalPresent}',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.present,
-                        ),
-                      ),
-                      Text(
-                        ' / ${overallStats.totalMarked}',
+                        'OVERALL ATTENDANCE',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.1,
                           color: isDark
                               ? AppColors.darkTextSecondary
                               : AppColors.lightTextSecondary,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        'attended',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? AppColors.darkTextTertiary
-                              : AppColors.lightTextTertiary,
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '${overallStats.totalPresent}',
+                            style: const TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.present,
+                            ),
+                          ),
+                          Text(
+                            ' / ${overallStats.totalMarked}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.lightTextSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            'attended',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? AppColors.darkTextTertiary
+                                  : AppColors.lightTextTertiary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (overallStats.totalMarked > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? AppColors.darkTextTertiary
+                                : AppColors.lightTextTertiary,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 6),
+                      _buildTargetStatusBadge(
+                        overallStats: overallStats,
+                        target: target,
+                        isDark: isDark,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [const Color(0xFF2C251D), const Color(0xFF382F24)]
+                      : [const Color(0xFFFFF9ED), const Color(0xFFF9F1DF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.kraftGold, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.kraftGold.withAlpha(isDark ? 40 : 25),
+                    offset: const Offset(0, 3),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Text('🎓', style: TextStyle(fontSize: 20)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'CONGRATULATIONS ON COMPLETING THE SEMESTER!',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                            color: isDark ? AppColors.kraftGold : const Color(0xFF916A00),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (overallStats.totalMarked > 0) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: roastColor.withAlpha(isDark ? 50 : 25),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: roastColor.withAlpha(120)),
+                    ),
+                    child: Text(
+                      roastTag,
                       style: TextStyle(
                         fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: isDark
-                            ? AppColors.darkTextTertiary
-                            : AppColors.lightTextTertiary,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        color: roastColor,
                       ),
                     ),
-                  ],
-                  const SizedBox(height: 6),
-                  _buildTargetStatusBadge(
-                    overallStats: overallStats,
-                    target: target,
-                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    roastMessage,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.45,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      );
+    }
 
-        // IF SEMESTER COMPLETED: Show Congratulations & Gen-Z Exam Roasts!
-        if (isSemesterComplete) ...[
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF2C251D), const Color(0xFF382F24)]
-                    : [const Color(0xFFFFF9ED), const Color(0xFFF9F1DF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    // Normal in-semester card:
+    // When fillHeight is true, Column expands with Spacer to match Active Class card!
+    return PaperCard(
+      showTape: true,
+      tapeColor: AppColors.kraftGold,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              PaperCircularProgress(
+                percentage: overallStats.percentage,
+                targetPercentage: target,
+                size: 138,
+                strokeWidth: 12.0,
+                animTrigger: _animTrigger,
               ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.kraftGold, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.kraftGold.withAlpha(isDark ? 40 : 25),
-                  offset: const Offset(0, 3),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🎓', style: TextStyle(fontSize: 16)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'CONGRATULATIONS ON COMPLETING THE SEMESTER!',
+                    Text(
+                      'OVERALL ATTENDANCE',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.1,
+                        color: isDark
+                            ? AppColors.darkTextSecondary
+                            : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '${overallStats.totalPresent}',
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.present,
+                          ),
+                        ),
+                        Text(
+                          ' / ${overallStats.totalMarked}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? AppColors.darkTextSecondary
+                                : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          'attended',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AppColors.darkTextTertiary
+                                : AppColors.lightTextTertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (overallStats.totalMarked > 0) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.8,
-                          color: isDark ? AppColors.kraftGold : const Color(0xFF916A00),
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? AppColors.darkTextTertiary
+                              : AppColors.lightTextTertiary,
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 6),
+                    _buildTargetStatusBadge(
+                      overallStats: overallStats,
+                      target: target,
+                      isDark: isDark,
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: roastColor.withAlpha(isDark ? 50 : 25),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: roastColor.withAlpha(120)),
-                  ),
-                  child: Text(
-                    roastTag,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 0.8,
-                      color: roastColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  roastMessage,
-                  style: TextStyle(
-                    fontSize: 11,
-                    height: 1.35,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ] else ...[
-          const SizedBox(height: 12),
+          if (fillHeight) const Spacer() else const SizedBox(height: 14),
           _buildAttendanceInsightBanner(
             overallStats: overallStats,
             target: target,
             isDark: isDark,
           ),
         ],
-      ],
+      ),
     );
   }
 

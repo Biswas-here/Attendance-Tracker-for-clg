@@ -926,8 +926,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return GestureDetector(
       onTap: () => attendance.setSelectedDate(cellDate),
       behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+      child: Container(
         height: 44,
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
         decoration: BoxDecoration(

@@ -13,6 +13,7 @@ import '../core/utils/holiday_utils.dart';
 class AttendanceProvider with ChangeNotifier {
   List<Subject> _subjects = [];
   List<ClassSession> _allSessions = [];
+  Map<String, List<ClassSession>> _sessionsByDate = {};
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
   Timer? _activeClassCheckTimer;
@@ -45,12 +46,24 @@ class AttendanceProvider with ChangeNotifier {
     try {
       _subjects = await AppDatabase.instance.getAllSubjects();
       _allSessions = await AppDatabase.instance.getAllSessions();
+      _rebuildSessionsIndex();
     } catch (e) {
       debugPrint('Error loading attendance data: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _rebuildSessionsIndex() {
+    final Map<String, List<ClassSession>> map = {};
+    for (final s in _allSessions) {
+      map.putIfAbsent(s.date, () => []).add(s);
+    }
+    for (final list in map.values) {
+      list.sort((a, b) => a.startTime.compareTo(b.startTime));
+    }
+    _sessionsByDate = map;
   }
 
   void setSelectedDate(DateTime date) {
@@ -100,8 +113,7 @@ class AttendanceProvider with ChangeNotifier {
       return [];
     }
     final dateStr = AppDateUtils.formatDateYmd(date);
-    return _allSessions.where((s) => s.date == dateStr).toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    return _sessionsByDate[dateStr] ?? const [];
   }
 
   List<ClassSession> get sessionsForSelectedDate => getSessionsForSelectedDate();
@@ -210,6 +222,7 @@ class AttendanceProvider with ChangeNotifier {
         status: status,
         markedAt: DateTime.now(),
       );
+      _rebuildSessionsIndex();
     }
     notifyListeners();
 
@@ -244,6 +257,7 @@ class AttendanceProvider with ChangeNotifier {
 
     await AppDatabase.instance.insertSession(session);
     _allSessions.add(session);
+    _rebuildSessionsIndex();
     notifyListeners();
 
     if ((userSettings?.notificationsEnabled ?? true) &&
@@ -465,6 +479,7 @@ class AttendanceProvider with ChangeNotifier {
     await NotificationService.instance.cancelSessionReminder(sessionId);
     await AppDatabase.instance.deleteSession(sessionId);
     _allSessions.removeWhere((s) => s.id == sessionId);
+    _rebuildSessionsIndex();
     notifyListeners();
   }
 
@@ -473,6 +488,7 @@ class AttendanceProvider with ChangeNotifier {
     final idx = _allSessions.indexWhere((s) => s.id == session.id);
     if (idx != -1) {
       _allSessions[idx] = session;
+      _rebuildSessionsIndex();
     }
     notifyListeners();
   }

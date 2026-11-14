@@ -178,7 +178,7 @@ class _PaperCircularProgressState extends State<PaperCircularProgress>
     super.initState();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 650),
     );
     _curvedAnim = CurvedAnimation(
       parent: _animController,
@@ -220,57 +220,59 @@ class _PaperCircularProgressState extends State<PaperCircularProgress>
 
     final trackColor = isDark ? const Color(0xFF33302B) : const Color(0xFFECE7DC);
 
-    return AnimatedBuilder(
-      animation: _curvedAnim,
-      builder: (context, _) {
-        final animFactor = widget.animate ? _curvedAnim.value : 1.0;
-        final currentPct = widget.percentage != null ? widget.percentage! * animFactor : null;
-        final progressVal = currentPct != null ? (currentPct / 100.0).clamp(0.0, 1.0) : 0.0;
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _curvedAnim,
+        builder: (context, _) {
+          final animFactor = widget.animate ? _curvedAnim.value : 1.0;
+          final currentPct = widget.percentage != null ? widget.percentage! * animFactor : null;
+          final progressVal = currentPct != null ? (currentPct / 100.0).clamp(0.0, 1.0) : 0.0;
 
-        return SizedBox(
-          width: widget.size,
-          height: widget.size,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CustomPaint(
-                size: Size(widget.size, widget.size),
-                painter: _PaperCircularProgressPainter(
-                  progress: progressVal,
-                  strokeWidth: widget.strokeWidth,
-                  trackColor: trackColor,
-                  progressColor: progressColor,
+          return SizedBox(
+            width: widget.size,
+            height: widget.size,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CustomPaint(
+                  size: Size(widget.size, widget.size),
+                  painter: _PaperCircularProgressPainter(
+                    progress: progressVal,
+                    strokeWidth: widget.strokeWidth,
+                    trackColor: trackColor,
+                    progressColor: progressColor,
+                  ),
                 ),
-              ),
-              // Inner text content counting up
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    currentPct != null ? '${currentPct.toStringAsFixed(1)}%' : '--',
-                    style: TextStyle(
-                      fontSize: widget.size * 0.22,
-                      fontWeight: FontWeight.w900,
-                      color: progressColor,
-                      letterSpacing: -0.5,
+                // Inner text content counting up
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      currentPct != null ? '${currentPct.toStringAsFixed(1)}%' : '--',
+                      style: TextStyle(
+                        fontSize: widget.size * 0.22,
+                        fontWeight: FontWeight.w900,
+                        color: progressColor,
+                        letterSpacing: -0.5,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'TARGET ${widget.targetPercentage.toInt()}%',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      'TARGET ${widget.targetPercentage.toInt()}%',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.8,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

@@ -557,30 +557,34 @@ class _LedgerScreenState extends State<LedgerScreen> {
     if (activeClasses.isEmpty) {
       if (isSemesterComplete) {
         // Natural height so the complete congratulations & roast text is 100% visible without clipping
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: _buildOverallAttendanceCard(
-            overallStats: overallStats,
-            target: target,
-            settings: settings,
-            isDark: isDark,
-            allSessions: allSessions,
-            fillHeight: false,
-          ),
-        );
-      } else {
-        // Normal in-semester: Exact matching generous height (302px) as the Active Class card
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: SizedBox(
-            height: 302,
+        return RepaintBoundary(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: _buildOverallAttendanceCard(
               overallStats: overallStats,
               target: target,
               settings: settings,
               isDark: isDark,
               allSessions: allSessions,
-              fillHeight: true,
+              fillHeight: false,
+            ),
+          ),
+        );
+      } else {
+        // Normal in-semester: Exact matching generous height (302px) as the Active Class card
+        return RepaintBoundary(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SizedBox(
+              height: 302,
+              child: _buildOverallAttendanceCard(
+                overallStats: overallStats,
+                target: target,
+                settings: settings,
+                isDark: isDark,
+                allSessions: allSessions,
+                fillHeight: true,
+              ),
             ),
           ),
         );
@@ -595,81 +599,83 @@ class _LedgerScreenState extends State<LedgerScreen> {
       orElse: () => activeClasses.first,
     );
 
-    return Column(
-      children: [
-        SizedBox(
-          height: 318,
-          child: PageView(
-            controller: _heroPageController,
-            onPageChanged: (idx) {
-              setState(() => _activeHeroPage = idx);
-              HapticService.selection();
-            },
-            children: [
-              // Page 0: Active Class Present / Absent Marking Card
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: _buildActiveClassCard(
-                  session: currentActiveSession,
-                  activeSessions: activeClasses,
-                  subjectsMap: subjectsMap,
-                  onMark: (status) async {
-                    HapticService.heavy();
-                    await attendance.markAttendance(currentActiveSession.id, status);
+    return RepaintBoundary(
+      child: Column(
+        children: [
+          SizedBox(
+            height: 318,
+            child: PageView(
+              controller: _heroPageController,
+              physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
+              onPageChanged: (idx) {
+                setState(() => _activeHeroPage = idx);
+                HapticService.selection();
+              },
+              children: [
+                // Page 0: Active Class Present / Absent Marking Card
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: _buildActiveClassCard(
+                    session: currentActiveSession,
+                    activeSessions: activeClasses,
+                    subjectsMap: subjectsMap,
+                    onMark: (status) async {
+                      HapticService.heavy();
+                      await attendance.markAttendance(currentActiveSession.id, status);
 
-                    // Smoothly scroll to the Overall Attendance card on Page 1
-                    await Future.delayed(const Duration(milliseconds: 300));
-                    if (mounted) {
-                      _heroPageController.animateToPage(
-                        1,
-                        duration: const Duration(milliseconds: 600),
-                        curve: Curves.easeInOutCubic,
-                      );
-                    }
-                  },
+                      // Smoothly scroll to the Overall Attendance card on Page 1
+                      await Future.delayed(const Duration(milliseconds: 300));
+                      if (mounted) {
+                        _heroPageController.animateToPage(
+                          1,
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeInOutCubic,
+                        );
+                      }
+                    },
+                    isDark: isDark,
+                  ),
+                ),
+
+                // Page 1: Overall Attendance Card (Matching Active Class card height!)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: _buildOverallAttendanceCard(
+                    overallStats: overallStats,
+                    target: target,
+                    settings: settings,
+                    isDark: isDark,
+                    allSessions: allSessions,
+                    fillHeight: true,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Page Indicator Dots
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 6),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPageDot(
+                  isActive: _activeHeroPage == 0,
+                  label: 'Active Class',
+                  icon: Icons.access_time_filled,
                   isDark: isDark,
                 ),
-              ),
-
-              // Page 1: Overall Attendance Card (Matching Active Class card height!)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: _buildOverallAttendanceCard(
-                  overallStats: overallStats,
-                  target: target,
-                  settings: settings,
+                const SizedBox(width: 8),
+                _buildPageDot(
+                  isActive: _activeHeroPage == 1,
+                  label: 'Overall Attendance',
+                  icon: Icons.pie_chart_rounded,
                   isDark: isDark,
-                  allSessions: allSessions,
-                  fillHeight: true,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-
-        // Page Indicator Dots
-        Padding(
-          padding: const EdgeInsets.only(top: 2, bottom: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildPageDot(
-                isActive: _activeHeroPage == 0,
-                label: 'Active Class',
-                icon: Icons.access_time_filled,
-                isDark: isDark,
-              ),
-              const SizedBox(width: 8),
-              _buildPageDot(
-                isActive: _activeHeroPage == 1,
-                label: 'Overall Attendance',
-                icon: Icons.pie_chart_rounded,
-                isDark: isDark,
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -1051,8 +1057,8 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 PaperCircularProgress(
                   percentage: overallStats.percentage,
                   targetPercentage: target,
-                  size: 138,
-                  strokeWidth: 12.0,
+                  size: 154,
+                  strokeWidth: 13.0,
                   animTrigger: _animTrigger,
                 ),
                 const SizedBox(width: 18),
@@ -1064,7 +1070,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                       Text(
                         'OVERALL ATTENDANCE',
                         style: TextStyle(
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.1,
                           color: isDark
@@ -1072,7 +1078,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                               : AppColors.lightTextSecondary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 5),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
@@ -1080,7 +1086,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           Text(
                             '${overallStats.totalPresent}',
                             style: const TextStyle(
-                              fontSize: 26,
+                              fontSize: 30,
                               fontWeight: FontWeight.w900,
                               color: AppColors.present,
                             ),
@@ -1088,7 +1094,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           Text(
                             ' / ${overallStats.totalMarked}',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: isDark
                                   ? AppColors.darkTextSecondary
@@ -1099,7 +1105,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           Text(
                             'attended',
                             style: TextStyle(
-                              fontSize: 11.5,
+                              fontSize: 12,
                               fontWeight: FontWeight.w700,
                               color: isDark
                                   ? AppColors.darkTextTertiary
@@ -1109,13 +1115,13 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         ],
                       ),
                       if (overallStats.totalMarked > 0) ...[
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 10.5,
                             fontWeight: FontWeight.w600,
                             color: isDark
                                 ? AppColors.darkTextTertiary
@@ -1227,8 +1233,8 @@ class _LedgerScreenState extends State<LedgerScreen> {
               PaperCircularProgress(
                 percentage: overallStats.percentage,
                 targetPercentage: target,
-                size: 138,
-                strokeWidth: 12.0,
+                size: 154,
+                strokeWidth: 13.0,
                 animTrigger: _animTrigger,
               ),
               const SizedBox(width: 16),
@@ -1240,7 +1246,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                     Text(
                       'OVERALL ATTENDANCE',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.1,
                         color: isDark
@@ -1248,7 +1254,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                             : AppColors.lightTextSecondary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 5),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -1256,7 +1262,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         Text(
                           '${overallStats.totalPresent}',
                           style: const TextStyle(
-                            fontSize: 26,
+                            fontSize: 30,
                             fontWeight: FontWeight.w900,
                             color: AppColors.present,
                           ),
@@ -1264,7 +1270,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         Text(
                           ' / ${overallStats.totalMarked}',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: isDark
                                 ? AppColors.darkTextSecondary
@@ -1275,7 +1281,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         Text(
                           'attended',
                           style: TextStyle(
-                            fontSize: 11.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: isDark
                                 ? AppColors.darkTextTertiary
@@ -1285,13 +1291,13 @@ class _LedgerScreenState extends State<LedgerScreen> {
                       ],
                     ),
                     if (overallStats.totalMarked > 0) ...[
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Text(
                         '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 10.5,
                           fontWeight: FontWeight.w600,
                           color: isDark
                               ? AppColors.darkTextTertiary
@@ -1525,7 +1531,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
         color: badgeColor.withAlpha(isDark ? 28 : 18),
         borderRadius: BorderRadius.circular(12),
@@ -1544,14 +1550,14 @@ class _LedgerScreenState extends State<LedgerScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 19, color: badgeColor),
+              Icon(icon, size: 21, color: badgeColor),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   message,
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
                     height: 1.35,
                     color: isDark ? Colors.white : AppColors.lightTextPrimary,
                   ),
@@ -1563,7 +1569,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                 decoration: BoxDecoration(
                   color: isDark ? Colors.white.withAlpha(18) : Colors.black.withAlpha(10),
                   borderRadius: BorderRadius.circular(6),
@@ -1571,7 +1577,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 child: Text(
                   'Target: ${target.toInt()}%',
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
                     color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                   ),
@@ -1579,7 +1585,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
                 decoration: BoxDecoration(
                   color: badgeColor.withAlpha(isDark ? 45 : 25),
                   borderRadius: BorderRadius.circular(6),
@@ -1590,12 +1596,30 @@ class _LedgerScreenState extends State<LedgerScreen> {
                       ? (canMiss > 0 ? '🛡️ Safe to miss: $canMiss' : '🎯 On the mark')
                       : '🚨 Need $needed in a row',
                   style: TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color: badgeColor,
                   ),
                 ),
               ),
+              if (overallStats.percentage != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withAlpha(12) : Colors.black.withAlpha(7),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '📊 Current: ${overallStats.percentage!.toStringAsFixed(1)}%',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ],

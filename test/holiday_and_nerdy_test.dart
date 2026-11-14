@@ -1,3 +1,4 @@
+import 'package:attendance_tracker/core/models/class_session.dart';
 import 'package:attendance_tracker/core/models/user_settings.dart';
 import 'package:attendance_tracker/core/utils/attendance_calculator.dart';
 import 'package:attendance_tracker/core/utils/holiday_utils.dart';
@@ -148,6 +149,63 @@ void main() {
 
       expect(settings.isDateInSemester(inDate), true);
       expect(settings.isDateInSemester(outDate), false);
+    });
+  });
+
+  group('Exam Session Model & Persistence Tests', () {
+    test('ClassSession identifies exam session via isExam flag or room label', () {
+      final exam1 = ClassSession(
+        id: 'exam_1',
+        subjectId: 'sub_math',
+        date: '2026-11-17',
+        startTime: '10:00',
+        endTime: '13:00',
+        room: 'Hall 201',
+        isExam: true,
+      );
+      expect(exam1.isExam, true);
+      expect(exam1.isExamSession, true);
+
+      final exam2 = ClassSession(
+        id: 'exam_2',
+        subjectId: 'sub_cs',
+        date: '2026-11-19',
+        startTime: '09:30',
+        endTime: '12:30',
+        room: 'Lab 1 • Lab Exam',
+      );
+      expect(exam2.isExamSession, true);
+
+      final regularClass = ClassSession(
+        id: 'class_1',
+        subjectId: 'sub_math',
+        date: '2026-11-16',
+        startTime: '10:00',
+        endTime: '11:00',
+        room: 'Room 101',
+      );
+      expect(regularClass.isExam, false);
+      expect(regularClass.isExamSession, false);
+    });
+
+    test('ClassSession serialization preserves is_exam flag', () {
+      final session = ClassSession(
+        id: 'sess_exam_test',
+        subjectId: 'sub_physics',
+        date: '2026-11-21',
+        startTime: '10:00',
+        endTime: '13:00',
+        room: 'Exam Hall A',
+        isExam: true,
+      );
+
+      final map = session.toMap();
+      expect(map['is_exam'], 1);
+
+      final restored = ClassSession.fromMap(map);
+      expect(restored.id, 'sess_exam_test');
+      expect(restored.isExam, true);
+      expect(restored.isExamSession, true);
     });
   });
 }

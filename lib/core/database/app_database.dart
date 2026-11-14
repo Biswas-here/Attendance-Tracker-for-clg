@@ -23,7 +23,7 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _createDB,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -72,6 +72,11 @@ class AppDatabase {
         await db.execute('ALTER TABLE subjects ADD COLUMN room TEXT');
       } catch (_) {}
     }
+    if (oldVersion < 7) {
+      try {
+        await db.execute('ALTER TABLE class_sessions ADD COLUMN is_exam INTEGER DEFAULT 0');
+      } catch (_) {}
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -113,6 +118,7 @@ class AppDatabase {
         status TEXT NOT NULL,
         marked_at TEXT,
         created_at TEXT NOT NULL,
+        is_exam INTEGER DEFAULT 0,
         FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE CASCADE
       )
     ''');
@@ -339,6 +345,36 @@ class AppDatabase {
   Future<int> deleteSessionsForDate(String dateStr) async {
     final db = await database;
     return await db.delete('class_sessions', where: 'date = ?', whereArgs: [dateStr]);
+  }
+
+  /// Delete exam sessions on a given date
+  Future<int> deleteExamSessionsForDate(String dateStr) async {
+    final db = await database;
+    return await db.delete(
+      'class_sessions',
+      where: 'date = ? AND (is_exam = 1 OR room LIKE ?)',
+      whereArgs: [dateStr, '%Exam%'],
+    );
+  }
+
+  /// Delete non-exam (regular) sessions on a given date (for full-day exam)
+  Future<int> deleteNonExamSessionsForDate(String dateStr) async {
+    final db = await database;
+    return await db.delete(
+      'class_sessions',
+      where: 'date = ? AND is_exam = 0 AND (room IS NULL OR room NOT LIKE ?)',
+      whereArgs: [dateStr, '%Exam%'],
+    );
+  }
+
+  /// Delete non-exam sessions on a given date that overlap with a time range (for half-day exam)
+  Future<int> deleteNonExamSessionsOverlappingTime(String dateStr, String startTime, String endTime) async {
+    final db = await database;
+    return await db.delete(
+      'class_sessions',
+      where: 'date = ? AND start_time < ? AND end_time > ? AND is_exam = 0 AND (room IS NULL OR room NOT LIKE ?)',
+      whereArgs: [dateStr, endTime, startTime, '%Exam%'],
+    );
   }
 
   /// Delete sessions on a given date that overlap with a time range (e.g. for half-day exams)

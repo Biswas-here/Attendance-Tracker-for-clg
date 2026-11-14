@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/models/subject.dart';
 import '../../../core/services/haptic_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
@@ -66,6 +67,65 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
     final subjects = context.read<AttendanceProvider>().subjects;
     if (subjects.isNotEmpty) {
       _selectedSubjectId = subjects.first.id;
+    }
+    _loadSavedSchedule();
+  }
+
+  Future<void> _loadSavedSchedule() async {
+    final attendance = context.read<AttendanceProvider>();
+    final saved = await attendance.getSavedExamSchedule();
+    if (saved != null && mounted) {
+      final isHalf = saved['isHalfDay'] as bool? ?? false;
+      final startStr = saved['examStartTime'] as String?;
+      final endStr = saved['examEndTime'] as String?;
+      final excludeGap = saved['excludeGapDays'] as bool? ?? true;
+      final exams = saved['exams'] as List? ?? [];
+
+      final subjects = attendance.subjects;
+      final list = <ExamEntryItem>[];
+      for (final e in exams) {
+        final dStr = e['date'] as String?;
+        final sId = e['subjectId'] as String?;
+        final room = e['room'] as String? ?? 'Exam Hall';
+        if (dStr != null && sId != null) {
+          final sub = subjects.firstWhere(
+            (s) => s.id == sId,
+            orElse: () => subjects.isNotEmpty
+                ? subjects.first
+                : Subject(id: sId, name: e['subjectName'] as String? ?? 'Exam', colorValue: 0xFF3F7E7D),
+          );
+          final d = DateTime.tryParse(dStr);
+          if (d != null) {
+            list.add(ExamEntryItem(
+              date: d,
+              subjectId: sId,
+              subjectName: sub.name,
+              colorValue: sub.colorValue,
+              room: room,
+            ));
+          }
+        }
+      }
+
+      setState(() {
+        _scheduleType = isHalf ? ExamScheduleType.halfDay : ExamScheduleType.fullDay;
+        _excludeGapDays = excludeGap;
+        if (startStr != null) {
+          final parts = startStr.split(':');
+          if (parts.length == 2) {
+            _halfDayStartTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+          }
+        }
+        if (endStr != null) {
+          final parts = endStr.split(':');
+          if (parts.length == 2) {
+            _halfDayEndTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+          }
+        }
+        _examList.clear();
+        _examList.addAll(list);
+        _examList.sort((a, b) => a.date.compareTo(b.date));
+      });
     }
   }
 
@@ -171,6 +231,11 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
           await settingsProv.addCustomHoliday(ymd);
         }
       },
+      onHolidaysRemoved: (holidays) async {
+        for (final ymd in holidays) {
+          await settingsProv.removeCustomHoliday(ymd);
+        }
+      },
     );
 
     if (mounted) {
@@ -178,13 +243,17 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
       final removed = result['removed'] ?? 0;
       final examsCount = _examList.length;
       final gaps = result['gaps'] ?? 0;
+      final restored = result['restored'] ?? 0;
 
-      String msg = 'Exam schedule applied! $examsCount exam(s) scheduled.';
+      String msg = 'Exam schedule updated! $examsCount exam(s) scheduled.';
       if (gaps > 0) {
         msg += ' $gaps study gap day(s) marked as holidays.';
       }
+      if (restored > 0) {
+        msg += ' $restored class date(s) restored.';
+      }
       if (removed > 0) {
-        msg += ' $removed conflicting class(es) removed from attendance.';
+        msg += ' Conflicting class(es) updated.';
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -192,6 +261,49 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
           content: Text(msg),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _clearSchedule() async {
+    final attendance = context.read<AttendanceProvider>();
+    final settingsProv = context.read<SettingsProvider>();
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Exam Schedule?'),
+        content: const Text(
+          'This will remove all scheduled exams and restore your regular timetable classes and off-days.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.absent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset All', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    await attendance.clearExamSchedule(
+      settings: settingsProv.settings,
+      onHolidaysRemoved: (holidays) async {
+        for (final ymd in holidays) {
+          await settingsProv.removeCustomHoliday(ymd);
+        }
+      },
+    );
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Exam schedule cleared. All regular classes restored!'),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
@@ -662,19 +774,27 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
               child: Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                   ),
-                  const SizedBox(width: 10),
+                  if (_examList.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.absent,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      ),
+                      onPressed: _clearSchedule,
+                      child: const Text('Reset', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5)),
+                    ),
+                  ],
+                  const SizedBox(width: 6),
                   Expanded(
-                    flex: 2,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.craftTeal,
@@ -684,7 +804,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
                       ),
                       onPressed: _examList.isNotEmpty ? _applySchedule : null,
                       child: Text(
-                        _examList.isEmpty ? 'Add Exams Above' : 'Apply Exam Schedule (${_examList.length})',
+                        _examList.isEmpty ? 'Add Exams Above' : 'Apply Changes (${_examList.length})',
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                       ),
                     ),
@@ -708,53 +828,72 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
   }) {
     final borderColor = isSelected
         ? AppColors.craftTeal
-        : (isDark ? AppColors.darkBorder : AppColors.lightBorder);
+        : (isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        height: 105,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.craftTeal.withAlpha(isDark ? 40 : 25)
+              ? AppColors.craftTeal.withAlpha(isDark ? 45 : 30)
               : (isDark ? const Color(0xFF2C2825) : Colors.white),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor, width: isSelected ? 1.6 : 1.0),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.0),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.craftTeal.withAlpha(30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? AppColors.craftTeal : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                      color: isSelected ? AppColors.craftTeal : null,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.craftTeal.withAlpha(isDark ? 70 : 40)
+                    : (isDark ? Colors.white.withAlpha(14) : Colors.black.withAlpha(8)),
+                shape: BoxShape.circle,
               ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected
+                    ? AppColors.craftTeal
+                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                color: isSelected ? AppColors.craftTeal : null,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

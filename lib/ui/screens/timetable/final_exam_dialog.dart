@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/models/class_session.dart';
+import '../../../core/models/subject.dart';
 import '../../../core/services/haptic_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
@@ -68,6 +69,53 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
     final subjects = context.read<AttendanceProvider>().subjects;
     if (subjects.isNotEmpty) {
       _selectedSubjectId = subjects.first.id;
+    }
+    _loadSavedFinals();
+  }
+
+  Future<void> _loadSavedFinals() async {
+    final attendance = context.read<AttendanceProvider>();
+    final saved = await attendance.getSavedFinalsSchedule();
+    if (saved != null && mounted) {
+      final exams = saved['finals'] as List? ?? [];
+      final subjects = attendance.subjects;
+      final list = <FinalExamItem>[];
+      for (final e in exams) {
+        final dStr = e['date'] as String?;
+        final sId = e['subjectId'] as String?;
+        final kindStr = e['kind'] as String?;
+        final sTime = e['startTime'] as String? ?? '10:00';
+        final eTime = e['endTime'] as String? ?? '13:00';
+        final loc = e['location'] as String? ?? 'Exam Hall';
+
+        if (dStr != null && sId != null) {
+          final sub = subjects.firstWhere(
+            (s) => s.id == sId,
+            orElse: () => subjects.isNotEmpty
+                ? subjects.first
+                : Subject(id: sId, name: e['subjectName'] as String? ?? 'Final Exam', colorValue: 0xFF3F7E7D),
+          );
+          final d = DateTime.tryParse(dStr);
+          if (d != null) {
+            list.add(FinalExamItem(
+              date: d,
+              subjectId: sId,
+              subjectName: sub.name,
+              colorValue: sub.colorValue,
+              kind: kindStr == 'lab' ? FinalExamKind.lab : FinalExamKind.theory,
+              startTime: sTime,
+              endTime: eTime,
+              location: loc,
+            ));
+          }
+        }
+      }
+
+      setState(() {
+        _finalsList.clear();
+        _finalsList.addAll(list);
+        _finalsList.sort((a, b) => a.date.compareTo(b.date));
+      });
     }
   }
 
@@ -138,6 +186,13 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
     final attendance = context.read<AttendanceProvider>();
     final settings = context.read<SettingsProvider>().settings;
 
+    // 1. Delete previous final exam sessions on any of these dates to prevent duplicates
+    final dates = _finalsList.map((e) => AppDateUtils.formatDateYmd(e.date)).toSet();
+    for (final d in dates) {
+      await AppDatabase.instance.deleteExamSessionsForDate(d);
+    }
+
+    // 2. Insert new final exam sessions
     int created = 0;
     for (final exam in _finalsList) {
       final ymd = AppDateUtils.formatDateYmd(exam.date);
@@ -150,10 +205,25 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
         endTime: exam.endTime,
         room: '${exam.location} • $kindLabel',
         status: AttendanceStatus.unmarked,
+        isExam: true,
       );
       await AppDatabase.instance.insertSession(session);
       created++;
     }
+
+    // 3. Save configuration
+    await attendance.saveFinalsSchedule({
+      'finals': _finalsList.map((e) => {
+        'date': AppDateUtils.formatDateYmd(e.date),
+        'subjectId': e.subjectId,
+        'subjectName': e.subjectName,
+        'kind': e.kind == FinalExamKind.lab ? 'lab' : 'theory',
+        'startTime': e.startTime,
+        'endTime': e.endTime,
+        'location': e.location,
+      }).toList(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
 
     await attendance.loadData(showLoading: false, userSettings: settings);
     await attendance.syncAllUpcomingNotifications(settings);
@@ -162,7 +232,48 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Finals schedule applied! $created final exam session(s) added to timetable.'),
+          content: Text('Finals schedule applied! $created final exam session(s) saved.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  Future<void> _clearFinals() async {
+    final attendance = context.read<AttendanceProvider>();
+    final settings = context.read<SettingsProvider>().settings;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Finals Schedule?'),
+        content: const Text('This will remove all scheduled final exams from your timetable.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.absent),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset All', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    final dates = _finalsList.map((e) => AppDateUtils.formatDateYmd(e.date)).toSet();
+    for (final d in dates) {
+      await AppDatabase.instance.deleteExamSessionsForDate(d);
+    }
+
+    await attendance.saveFinalsSchedule({'finals': []});
+    await attendance.loadData(showLoading: false, userSettings: settings);
+    await attendance.syncAllUpcomingNotifications(settings);
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Finals schedule cleared.'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -536,19 +647,27 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
               padding: const EdgeInsets.fromLTRB(14, 4, 14, 12),
               child: Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                   ),
-                  const SizedBox(width: 10),
+                  if (_finalsList.isNotEmpty) ...[
+                    const SizedBox(width: 6),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.absent,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                      ),
+                      onPressed: _clearFinals,
+                      child: const Text('Reset', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5)),
+                    ),
+                  ],
+                  const SizedBox(width: 6),
                   Expanded(
-                    flex: 2,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.kraftGold,
@@ -558,7 +677,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
                       ),
                       onPressed: _finalsList.isNotEmpty ? _applyFinalsSchedule : null,
                       child: Text(
-                        _finalsList.isEmpty ? 'Add Finals Above' : 'Apply Finals Schedule (${_finalsList.length})',
+                        _finalsList.isEmpty ? 'Add Finals Above' : 'Apply Finals (${_finalsList.length})',
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
                       ),
                     ),
@@ -583,53 +702,72 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
   }) {
     final borderColor = isSelected
         ? activeColor
-        : (isDark ? AppColors.darkBorder : AppColors.lightBorder);
+        : (isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+        height: 105,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeColor.withAlpha(isDark ? 40 : 25)
+              ? activeColor.withAlpha(isDark ? 45 : 30)
               : (isDark ? const Color(0xFF2C2825) : Colors.white),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: borderColor, width: isSelected ? 1.6 : 1.0),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: isSelected ? 2.0 : 1.0),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: activeColor.withAlpha(30),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
-        child: Row(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? activeColor : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 11,
-                      color: isSelected ? activeColor : null,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 9.5,
-                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? activeColor.withAlpha(isDark ? 70 : 40)
+                    : (isDark ? Colors.white.withAlpha(14) : Colors.black.withAlpha(8)),
+                shape: BoxShape.circle,
               ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected
+                    ? activeColor
+                    : (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary),
+              ),
+            ),
+            const SizedBox(height: 7),
+            Text(
+              title,
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+                color: isSelected ? activeColor : null,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../core/database/app_database.dart';
 import '../core/models/subject.dart';
@@ -145,16 +147,27 @@ class AttendanceProvider with ChangeNotifier {
   // --- TIMETABLE / CALENDAR HELPERS ---
 
   List<ClassSession> getSessionsForDate(DateTime date, [UserSettings? settings]) {
+    final dateStr = AppDateUtils.formatDateYmd(date);
+    final sessions = _sessionsByDate[dateStr] ?? const [];
+
     if (settings != null) {
+      final examSessions = sessions.where((s) => s.isExamSession).toList();
       if (settings.hasSemesterRange && !settings.isDateInSemester(date)) {
-        return const [];
+        // Exam sessions and finals are never hidden, even outside semester range!
+        return examSessions;
       }
       if (HolidayUtils.isHoliday(date, settings)) {
-        return const [];
+        // Exam sessions on declared off-days / holidays are also kept visible!
+        return examSessions;
       }
     }
+    return sessions;
+  }
+
+  bool isExamDate(DateTime date) {
     final dateStr = AppDateUtils.formatDateYmd(date);
-    return _sessionsByDate[dateStr] ?? const [];
+    final sessions = _sessionsByDate[dateStr] ?? const [];
+    return sessions.any((s) => s.isExamSession);
   }
 
   List<ClassSession> getSessionsForSubject(String subjectId) {
@@ -172,14 +185,16 @@ class AttendanceProvider with ChangeNotifier {
   /// 'red': At least one scheduled class was marked absent
   /// 'partial': Some classes marked, some unmarked
   /// 'unmarked': Scheduled classes exist, but none marked yet
+  /// 'future': Scheduled classes in future or exam day
   /// 'none': No classes scheduled (or outside semester)
   String getDateStatus(DateTime date, [UserSettings? settings]) {
-    if (settings != null && settings.hasSemesterRange && !settings.isDateInSemester(date)) {
-      return 'none';
-    }
-
     final sessions = getSessionsForDate(date, settings);
     if (sessions.isEmpty) return 'none';
+
+    // If day contains exams, indicate as active future / exam day
+    if (sessions.any((s) => s.isExamSession)) {
+      return 'future';
+    }
 
     final now = DateTime.now();
     final isFuture = date.isAfter(DateTime(now.year, now.month, now.day));
@@ -602,6 +617,116 @@ class AttendanceProvider with ChangeNotifier {
     return deleted;
   }
 
+  static const String _prefKeyExamSchedule = 'saved_exam_schedule_config_v2';
+  static const String _prefKeyFinalsSchedule = 'saved_finals_schedule_config_v2';
+
+  Future<Map<String, dynamic>?> getSavedExamSchedule() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final str = prefs.getString(_prefKeyExamSchedule);
+      if (str != null && str.isNotEmpty) {
+        return jsonDecode(str) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> saveExamSchedule(Map<String, dynamic> config) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefKeyExamSchedule, jsonEncode(config));
+    } catch (_) {}
+  }
+
+  Future<Map<String, dynamic>?> getSavedFinalsSchedule() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final str = prefs.getString(_prefKeyFinalsSchedule);
+      if (str != null && str.isNotEmpty) {
+        return jsonDecode(str) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> saveFinalsSchedule(Map<String, dynamic> config) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefKeyFinalsSchedule, jsonEncode(config));
+    } catch (_) {}
+  }
+
+  Future<int> restoreRegularClassesForDates(List<String> dateStrs, UserSettings settings) async {
+    if (dateStrs.isEmpty) return 0;
+    final dbRules = await AppDatabase.instance.getAllScheduleRules();
+    final templates = <String, ({int weekday, String startTime, String endTime, String subjectId, String? room})>{};
+
+    for (final rule in dbRules) {
+      final key = '${rule.dayOfWeek}|${rule.startTime}|${rule.endTime}|${rule.subjectId}';
+      templates[key] = (
+        weekday: rule.dayOfWeek,
+        startTime: rule.startTime,
+        endTime: rule.endTime,
+        subjectId: rule.subjectId,
+        room: rule.room,
+      );
+    }
+
+    for (final s in _allSessions) {
+      if (s.isExamSession) continue;
+      final dt = DateTime.tryParse(s.date);
+      if (dt == null) continue;
+      final key = '${dt.weekday}|${s.startTime}|${s.endTime}|${s.subjectId}';
+      if (!templates.containsKey(key)) {
+        templates[key] = (
+          weekday: dt.weekday,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          subjectId: s.subjectId,
+          room: s.room,
+        );
+      }
+    }
+
+    if (templates.isEmpty) return 0;
+
+    int restoredCount = 0;
+    for (final dateStr in dateStrs) {
+      final dt = DateTime.tryParse(dateStr);
+      if (dt == null) continue;
+
+      if (HolidayUtils.isHoliday(dt, settings)) continue;
+      if (settings.hasSemesterRange && !settings.isDateInSemester(dt)) continue;
+
+      final existingSessions = _sessionsByDate[dateStr] ?? [];
+      final existingKeys = {
+        for (final s in existingSessions) '${s.subjectId}|${s.startTime}'
+      };
+
+      for (final t in templates.values) {
+        if (t.weekday == dt.weekday) {
+          final key = '${t.subjectId}|${t.startTime}';
+          if (!existingKeys.contains(key)) {
+            existingKeys.add(key);
+            final session = ClassSession(
+              id: const Uuid().v4(),
+              subjectId: t.subjectId,
+              date: dateStr,
+              startTime: t.startTime,
+              endTime: t.endTime,
+              room: t.room,
+              status: AttendanceStatus.unmarked,
+              isExam: false,
+            );
+            await AppDatabase.instance.insertSession(session);
+            restoredCount++;
+          }
+        }
+      }
+    }
+    return restoredCount;
+  }
+
   /// Apply Exam Schedule & In-Between Holiday Leave
   Future<Map<String, int>> applyExamSchedule({
     required bool isHalfDay,
@@ -612,14 +737,64 @@ class AttendanceProvider with ChangeNotifier {
     required bool createExamSessions,
     required UserSettings settings,
     required Future<void> Function(List<String> holidaysToAdd) onHolidaysAdded,
+    required Future<void> Function(List<String> holidaysToRemove) onHolidaysRemoved,
   }) async {
+    // 0. Compare with previously saved exam schedule to restore dates that were removed or changed!
+    final prevConfig = await getSavedExamSchedule();
+    final prevExamDates = (prevConfig?['exams'] as List?)
+            ?.map((e) => (e as Map)['date'] as String)
+            .toSet() ??
+        <String>{};
+    final prevGapHolidays = (prevConfig?['gapHolidays'] as List?)
+            ?.cast<String>()
+            .toSet() ??
+        <String>{};
+
+    final newExamDateStrs = exams.map((e) => e['date'] as String).toSet();
+    final newGapDatesToAdd = <String>[];
+
+    // Compute new gap days if toggle is ON and at least 2 exams
+    if (excludeGapDays && exams.length >= 2) {
+      final sortedExamDates = exams.map((e) => DateTime.parse(e['date'] as String)).toList()..sort();
+      final firstDate = sortedExamDates.first;
+      final lastDate = sortedExamDates.last;
+
+      var cur = firstDate.add(const Duration(days: 1));
+      while (cur.isBefore(lastDate)) {
+        final ymd = AppDateUtils.formatDateYmd(cur);
+        if (!newExamDateStrs.contains(ymd)) {
+          newGapDatesToAdd.add(ymd);
+        }
+        cur = cur.add(const Duration(days: 1));
+      }
+    }
+
+    final newGapDateStrs = newGapDatesToAdd.toSet();
+
+    // Identify dates that were previously exams or gap holidays, but are NO LONGER in the schedule
+    final oldActiveDates = <String>{...prevExamDates, ...prevGapHolidays};
+    final newActiveDates = <String>{...newExamDateStrs, ...newGapDateStrs};
+    final datesToRestore = oldActiveDates.difference(newActiveDates).toList();
+
+    // 1. Clean up old dates that were removed
+    if (datesToRestore.isNotEmpty) {
+      for (final dateStr in datesToRestore) {
+        if (prevExamDates.contains(dateStr)) {
+          await AppDatabase.instance.deleteExamSessionsForDate(dateStr);
+        }
+      }
+      final holidaysToRemove = datesToRestore.where((d) => prevGapHolidays.contains(d)).toList();
+      if (holidaysToRemove.isNotEmpty) {
+        await onHolidaysRemoved(holidaysToRemove);
+      }
+      await restoreRegularClassesForDates(datesToRestore, settings);
+    }
+
     int conflictingClassesRemoved = 0;
     int examSessionsCreated = 0;
     int gapHolidaysAdded = 0;
 
-    final examDateStrs = exams.map((e) => e['date'] as String).toSet();
-
-    // 1. Process each exam date
+    // 2. Process each new exam date
     for (final exam in exams) {
       final dateStr = exam['date'] as String;
       final subjectId = exam['subjectId'] as String;
@@ -627,25 +802,21 @@ class AttendanceProvider with ChangeNotifier {
           ? (exam['room'] as String).trim()
           : 'Exam Hall';
 
-      // Cancel notifications for existing sessions on this date
-      final existingSessions = _sessionsByDate[dateStr] ?? [];
-      for (final s in existingSessions) {
-        await NotificationService.instance.cancelSessionReminder(s.id);
-      }
+      // Remove existing exam sessions on this date first to avoid duplicates
+      await AppDatabase.instance.deleteExamSessionsForDate(dateStr);
 
       if (!isHalfDay) {
-        // Full-day exam / holiday after exam: Remove all regular classes on that date
-        final deleted = await AppDatabase.instance.deleteSessionsForDate(dateStr);
+        // Full-day exam: Remove all regular non-exam classes on that date
+        final deleted = await AppDatabase.instance.deleteNonExamSessionsForDate(dateStr);
         conflictingClassesRemoved += deleted;
       } else {
         // Half-day exam: Remove regular classes overlapping with exam hours
         final startTime = examStartTime ?? '09:30';
         final endTime = examEndTime ?? '12:30';
-        final deleted = await AppDatabase.instance.deleteSessionsOverlappingTime(dateStr, startTime, endTime);
+        final deleted = await AppDatabase.instance.deleteNonExamSessionsOverlappingTime(dateStr, startTime, endTime);
         conflictingClassesRemoved += deleted;
       }
 
-      // If user wants to track attendance for the exam itself, create an exam session
       if (createExamSessions) {
         final examSession = ClassSession(
           id: const Uuid().v4(),
@@ -655,38 +826,35 @@ class AttendanceProvider with ChangeNotifier {
           endTime: isHalfDay ? (examEndTime ?? '12:30') : '13:00',
           room: room,
           status: AttendanceStatus.unmarked,
+          isExam: true,
         );
         await AppDatabase.instance.insertSession(examSession);
         examSessionsCreated++;
       }
     }
 
-    // 2. Process gap days between first and last exam if toggle is ON
-    if (excludeGapDays && exams.length >= 2) {
-      final sortedExamDates = exams.map((e) => DateTime.parse(e['date'] as String)).toList()..sort();
-      final firstDate = sortedExamDates.first;
-      final lastDate = sortedExamDates.last;
-
-      final gapDatesToAdd = <String>[];
-      var cur = firstDate.add(const Duration(days: 1));
-      while (cur.isBefore(lastDate)) {
-        final ymd = AppDateUtils.formatDateYmd(cur);
-        if (!examDateStrs.contains(ymd)) {
-          gapDatesToAdd.add(ymd);
-          // Delete any regular classes scheduled on this gap holiday
-          final deleted = await AppDatabase.instance.deleteSessionsForDate(ymd);
-          conflictingClassesRemoved += deleted;
-          gapHolidaysAdded++;
-        }
-        cur = cur.add(const Duration(days: 1));
+    // 3. Process new gap days
+    if (newGapDatesToAdd.isNotEmpty) {
+      for (final gapYmd in newGapDatesToAdd) {
+        final deleted = await AppDatabase.instance.deleteNonExamSessionsForDate(gapYmd);
+        conflictingClassesRemoved += deleted;
+        gapHolidaysAdded++;
       }
-
-      if (gapDatesToAdd.isNotEmpty) {
-        await onHolidaysAdded(gapDatesToAdd);
-      }
+      await onHolidaysAdded(newGapDatesToAdd);
     }
 
-    // Reload data and sync notifications
+    // 4. Save active configuration
+    await saveExamSchedule({
+      'isHalfDay': isHalfDay,
+      'examStartTime': examStartTime,
+      'examEndTime': examEndTime,
+      'excludeGapDays': excludeGapDays,
+      'exams': exams,
+      'gapHolidays': newGapDatesToAdd,
+      'updatedAt': DateTime.now().toIso8601String(),
+    });
+
+    // 5. Reload data and sync notifications
     await loadData(showLoading: false, userSettings: settings);
     await syncAllUpcomingNotifications(settings);
 
@@ -694,6 +862,42 @@ class AttendanceProvider with ChangeNotifier {
       'removed': conflictingClassesRemoved,
       'exams': examSessionsCreated,
       'gaps': gapHolidaysAdded,
+      'restored': datesToRestore.length,
     };
+  }
+
+  /// Reset / Clear Exam Schedule and restore all regular classes
+  Future<void> clearExamSchedule({
+    required UserSettings settings,
+    required Future<void> Function(List<String> holidaysToRemove) onHolidaysRemoved,
+  }) async {
+    final prevConfig = await getSavedExamSchedule();
+    if (prevConfig == null) return;
+
+    final prevExamDates = (prevConfig['exams'] as List?)
+            ?.map((e) => (e as Map)['date'] as String)
+            .toSet() ??
+        <String>{};
+    final prevGapHolidays = (prevConfig['gapHolidays'] as List?)
+            ?.cast<String>()
+            .toSet() ??
+        <String>{};
+
+    final allDates = <String>{...prevExamDates, ...prevGapHolidays}.toList();
+
+    for (final d in prevExamDates) {
+      await AppDatabase.instance.deleteExamSessionsForDate(d);
+    }
+    if (prevGapHolidays.isNotEmpty) {
+      await onHolidaysRemoved(prevGapHolidays.toList());
+    }
+
+    await restoreRegularClassesForDates(allDates, settings);
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefKeyExamSchedule);
+
+    await loadData(showLoading: false, userSettings: settings);
+    await syncAllUpcomingNotifications(settings);
   }
 }

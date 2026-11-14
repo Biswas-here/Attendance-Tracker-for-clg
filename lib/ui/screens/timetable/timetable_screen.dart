@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/models/class_session.dart';
+import '../../../core/models/subject.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/date_utils.dart';
 import '../../../core/utils/holiday_utils.dart';
@@ -278,7 +280,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   void _showExamScheduleDialog(DateTime date) {
     final settings = context.read<SettingsProvider>().settings;
-    if (settings.isSemesterEnded) {
+    final isFinals = settings.isSemesterEnded ||
+        (settings.hasSemesterRange &&
+            settings.semesterEndDateTime != null &&
+            !date.isBefore(settings.semesterEndDateTime!));
+    if (isFinals) {
       showDialog(
         context: context,
         builder: (_) => FinalExamDialog(initialDate: date),
@@ -649,6 +655,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
             ...daySessions.map((session) {
               final sub = subjectsMap[session.subjectId];
 
+              // If it's an exam session, render custom exam card without attendance stamps
+              if (session.isExamSession) {
+                return _buildExamSessionCard(
+                  session: session,
+                  sub: sub,
+                  isDark: isDark,
+                  attendance: attendance,
+                  selectedDate: selectedDate,
+                );
+              }
+
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                 child: PaperCard(
@@ -782,6 +799,261 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
+  // ── DEDICATED EXAM CARD (NO ATTENDANCE BUTTONS, WITH COUNTDOWN) ──────────
+  Widget _buildExamSessionCard({
+    required ClassSession session,
+    required Subject? sub,
+    required bool isDark,
+    required AttendanceProvider attendance,
+    required DateTime selectedDate,
+  }) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final examDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    final daysDiff = examDay.difference(today).inDays;
+
+    String countdownText;
+    Color countdownBg;
+    Color countdownFg;
+    IconData countdownIcon;
+
+    if (daysDiff == 0) {
+      countdownText = "🔥 Today's Exam • Best of Luck!";
+      countdownBg = AppColors.kraftGold.withAlpha(isDark ? 60 : 40);
+      countdownFg = isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309);
+      countdownIcon = Icons.local_fire_department_rounded;
+    } else if (daysDiff == 1) {
+      countdownText = "⏳ Tomorrow • 1 day left";
+      countdownBg = AppColors.craftTeal.withAlpha(isDark ? 55 : 35);
+      countdownFg = AppColors.craftTeal;
+      countdownIcon = Icons.timer_outlined;
+    } else if (daysDiff > 1) {
+      countdownText = "⏳ In $daysDiff days • Prepare well!";
+      countdownBg = AppColors.craftTeal.withAlpha(isDark ? 45 : 25);
+      countdownFg = AppColors.craftTeal;
+      countdownIcon = Icons.event_available_rounded;
+    } else {
+      final pastDays = -daysDiff;
+      countdownText = "✓ Completed • $pastDays day${pastDays == 1 ? '' : 's'} ago";
+      countdownBg = isDark ? Colors.white.withAlpha(15) : Colors.black.withAlpha(10);
+      countdownFg = isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary;
+      countdownIcon = Icons.check_circle_outline_rounded;
+    }
+
+    final isLab = session.room != null && session.room!.toLowerCase().contains('lab');
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: PaperCard(
+        showTape: true,
+        tapeColor: isLab ? AppColors.craftPlum : AppColors.kraftGold,
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Prominent Exam Badge
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: (isLab ? AppColors.craftPlum : AppColors.craftTeal).withAlpha(isDark ? 55 : 35),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isLab ? AppColors.craftPlum : AppColors.craftTeal,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Icon(
+                    isLab ? Icons.science_outlined : Icons.auto_stories_rounded,
+                    size: 22,
+                    color: isLab ? AppColors.craftPlum : AppColors.craftTeal,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (isLab ? AppColors.craftPlum : AppColors.kraftGold).withAlpha(isDark ? 50 : 35),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.school_rounded,
+                                  size: 11,
+                                  color: isLab ? AppColors.craftPlum : (isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309)),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isLab ? 'LAB / PRACTICAL EXAM' : 'EXAM SESSION',
+                                  style: TextStyle(
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 0.4,
+                                    color: isLab ? AppColors.craftPlum : (isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        sub?.name ?? 'Exam Paper',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                      ),
+                      if (sub?.code != null && sub!.code!.isNotEmpty)
+                        Text(
+                          sub.code!,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Remove Exam Session?'),
+                        content: const Text('This will delete this scheduled exam from your timetable.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete', style: TextStyle(color: AppColors.absent)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await attendance.deleteSession(session.id);
+                    }
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Room & Time details
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withAlpha(14) : Colors.black.withAlpha(8),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.access_time_filled,
+                        size: 13,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        AppDateUtils.formatTimeRange(session.startTime, session.endTime),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (session.room != null && session.room!.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withAlpha(14) : Colors.black.withAlpha(8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.meeting_room_rounded,
+                            size: 13,
+                            color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              session.room!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            // Prominent Countdown Status Banner (No P/A buttons!)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: countdownBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: countdownFg.withAlpha(70), width: 1),
+              ),
+              child: Row(
+                children: [
+                  Icon(countdownIcon, size: 16, color: countdownFg),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      countdownText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: countdownFg,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── 7-COLUMN MONTH GRID ──────────────────────────────────────────────────
   Widget _buildMonthGrid({
     required Key key,
@@ -854,6 +1126,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final isInSemester = settings.isDateInSemester(cellDate);
     final status = attendance.getDateStatus(cellDate, settings);
     final isHoliday = isInSemester && HolidayUtils.isHoliday(cellDate, settings);
+    final isExamDay = attendance.isExamDate(cellDate);
 
     return GestureDetector(
       onTap: () => attendance.setSelectedDate(cellDate),
@@ -864,23 +1137,27 @@ class _TimetableScreenState extends State<TimetableScreen> {
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.craftTeal
-              : (!isInSemester
+              : (!isInSemester && !isExamDay
                   ? Colors.transparent
                   : (isToday
                       ? (isDark ? const Color(0xFF2A2825) : const Color(0xFFEBE5D8))
                       : (isHoliday
                           ? (isDark ? Colors.black26 : const Color(0xFFF3ECE0))
-                          : Colors.transparent))),
+                          : (isExamDay
+                              ? (isDark ? const Color(0xFF2E2A23) : const Color(0xFFFFF8E7))
+                              : Colors.transparent)))),
           borderRadius: BorderRadius.circular(10),
           border: isToday && !isSelected
               ? Border.all(color: AppColors.craftTeal, width: 1.5)
               : (isSelected
                   ? Border.all(color: AppColors.craftTeal, width: 1.5)
-                  : (isHoliday && !isSelected
-                      ? Border.all(color: AppColors.kraftGold.withAlpha(70), width: 1)
-                      : (!isInSemester && !isSelected
-                          ? Border.all(color: (isDark ? Colors.white : Colors.black).withAlpha(12), width: 0.8)
-                          : null))),
+                  : (isExamDay && !isSelected
+                      ? Border.all(color: (isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706)).withAlpha(120), width: 1.2)
+                      : (isHoliday && !isSelected
+                          ? Border.all(color: AppColors.kraftGold.withAlpha(70), width: 1)
+                          : (!isInSemester && !isSelected
+                              ? Border.all(color: (isDark ? Colors.white : Colors.black).withAlpha(12), width: 0.8)
+                              : null)))),
           boxShadow: isSelected
               ? [
                   BoxShadow(
@@ -894,21 +1171,31 @@ class _TimetableScreenState extends State<TimetableScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (isExamDay) ...[
+              Icon(
+                Icons.auto_stories_rounded,
+                size: 9.5,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706)),
+              ),
+              const SizedBox(height: 1),
+            ],
             Text(
               '$day',
               style: TextStyle(
-                fontSize: 13,
-                fontWeight: isSelected || isToday ? FontWeight.w900 : FontWeight.w600,
+                fontSize: isExamDay ? 11.5 : 13,
+                fontWeight: isSelected || isToday || isExamDay ? FontWeight.w900 : FontWeight.w600,
                 color: isSelected
                     ? Colors.white
-                    : (!isInSemester
+                    : (!isInSemester && !isExamDay
                         ? (isDark ? Colors.white30 : Colors.black26)
                         : (isHoliday
                             ? AppColors.kraftBrown
                             : (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary))),
               ),
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             _buildStatusIndicator(status, isSelected, isHoliday),
           ],
         ),
@@ -978,8 +1265,24 @@ class _TimetableScreenState extends State<TimetableScreen> {
           _legendItem(AppColors.kraftGold, 'Partial'),
           _legendItem(AppColors.unmarked, 'Unmarked'),
           _legendItem(AppColors.kraftGold.withAlpha(160), 'Holiday'),
+          _legendIconItem(
+            Icons.auto_stories_rounded,
+            isDark ? const Color(0xFFFFD54F) : const Color(0xFFD97706),
+            'Exam',
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _legendIconItem(IconData icon, Color color, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 11, color: color),
+        const SizedBox(width: 4),
+        Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+      ],
     );
   }
 

@@ -37,6 +37,7 @@ class ClassSession {
   final AttendanceStatus status;
   final DateTime? markedAt;
   final DateTime createdAt;
+  final bool isExam;
 
   ClassSession({
     required this.id,
@@ -49,7 +50,11 @@ class ClassSession {
     this.status = AttendanceStatus.unmarked,
     this.markedAt,
     DateTime? createdAt,
+    this.isExam = false,
   }) : createdAt = createdAt ?? DateTime.now();
+
+  bool get isExamSession =>
+      isExam || (room != null && room!.toLowerCase().contains('exam'));
 
   Map<String, dynamic> toMap() {
     return {
@@ -63,10 +68,15 @@ class ClassSession {
       'status': status.value,
       'marked_at': markedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
+      'is_exam': isExam ? 1 : 0,
     };
   }
 
   factory ClassSession.fromMap(Map<String, dynamic> map) {
+    final roomVal = map['room'] as String?;
+    final isExamCol = (map['is_exam'] as int?) == 1;
+    final isExamRoom = roomVal != null && roomVal.toLowerCase().contains('exam');
+
     return ClassSession(
       id: map['id'] as String,
       subjectId: map['subject_id'] as String,
@@ -74,7 +84,7 @@ class ClassSession {
       date: map['date'] as String,
       startTime: map['start_time'] as String,
       endTime: map['end_time'] as String,
-      room: map['room'] as String?,
+      room: roomVal,
       status: AttendanceStatus.fromString(map['status'] as String?),
       markedAt: map['marked_at'] != null
           ? DateTime.tryParse(map['marked_at'] as String)
@@ -82,6 +92,7 @@ class ClassSession {
       createdAt: map['created_at'] != null
           ? DateTime.parse(map['created_at'] as String)
           : DateTime.now(),
+      isExam: isExamCol || isExamRoom,
     );
   }
 
@@ -97,6 +108,7 @@ class ClassSession {
     AttendanceStatus? status,
     DateTime? markedAt,
     DateTime? createdAt,
+    bool? isExam,
   }) {
     return ClassSession(
       id: id ?? this.id,
@@ -109,6 +121,7 @@ class ClassSession {
       status: status ?? this.status,
       markedAt: markedAt ?? this.markedAt,
       createdAt: createdAt ?? this.createdAt,
+      isExam: isExam ?? this.isExam,
     );
   }
 

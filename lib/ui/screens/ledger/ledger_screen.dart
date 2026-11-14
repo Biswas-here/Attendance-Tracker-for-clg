@@ -1118,11 +1118,12 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         const SizedBox(height: 3),
                         Text(
                           '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
+                          softWrap: true,
                           style: TextStyle(
-                            fontSize: 10.5,
+                            fontSize: 10.2,
                             fontWeight: FontWeight.w600,
+                            height: 1.25,
                             color: isDark
                                 ? AppColors.darkTextTertiary
                                 : AppColors.lightTextTertiary,
@@ -1294,11 +1295,12 @@ class _LedgerScreenState extends State<LedgerScreen> {
                       const SizedBox(height: 3),
                       Text(
                         '${overallStats.totalMarked} marked (${overallStats.totalPresent} Present, ${overallStats.totalAbsent} Absent)',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        softWrap: true,
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 10.2,
                           fontWeight: FontWeight.w600,
+                          height: 1.25,
                           color: isDark
                               ? AppColors.darkTextTertiary
                               : AppColors.lightTextTertiary,

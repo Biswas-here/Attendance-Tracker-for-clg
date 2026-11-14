@@ -1602,24 +1602,6 @@ class _LedgerScreenState extends State<LedgerScreen> {
                   ),
                 ),
               ),
-              if (overallStats.percentage != null) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3.5),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withAlpha(12) : Colors.black.withAlpha(7),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '📊 Current: ${overallStats.percentage!.toStringAsFixed(1)}%',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
         ],

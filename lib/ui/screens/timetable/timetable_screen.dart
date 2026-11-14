@@ -278,21 +278,24 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  void _showExamScheduleDialog(DateTime date) {
+  void _showExamScheduleDialog([DateTime? date]) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = date ?? today;
     final settings = context.read<SettingsProvider>().settings;
     final isFinals = settings.isSemesterEnded ||
         (settings.hasSemesterRange &&
             settings.semesterEndDateTime != null &&
-            !date.isBefore(settings.semesterEndDateTime!));
+            !targetDate.isBefore(settings.semesterEndDateTime!));
     if (isFinals) {
       showDialog(
         context: context,
-        builder: (_) => FinalExamDialog(initialDate: date),
+        builder: (_) => FinalExamDialog(initialDate: today),
       );
     } else {
       showDialog(
         context: context,
-        builder: (_) => ExamScheduleDialog(initialDate: date),
+        builder: (_) => ExamScheduleDialog(initialDate: today),
       );
     }
   }
@@ -604,7 +607,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                         ),
                       ),
                     ),
-                    onPressed: () => _showExamScheduleDialog(selectedDate),
+                    onPressed: () => _showExamScheduleDialog(DateTime.now()),
                     icon: Icon(
                       Icons.school_rounded,
                       size: 16,
@@ -846,7 +849,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: PaperCard(
         showTape: true,
-        tapeColor: isLab ? AppColors.craftPlum : AppColors.kraftGold,
+        tapeColor: isLab ? const Color(0xFF0284C7) : const Color(0xFF1E40AF),
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -858,17 +861,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: (isLab ? AppColors.craftPlum : AppColors.craftTeal).withAlpha(isDark ? 55 : 35),
+                    color: (isLab ? const Color(0xFF0284C7) : const Color(0xFF1E40AF)).withAlpha(isDark ? 55 : 35),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: isLab ? AppColors.craftPlum : AppColors.craftTeal,
+                      color: isLab ? const Color(0xFF0284C7) : const Color(0xFF1E40AF),
                       width: 1.5,
                     ),
                   ),
                   child: Icon(
                     isLab ? Icons.science_outlined : Icons.auto_stories_rounded,
                     size: 22,
-                    color: isLab ? AppColors.craftPlum : AppColors.craftTeal,
+                    color: isLab ? const Color(0xFF0284C7) : (isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -881,7 +884,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                             decoration: BoxDecoration(
-                              color: (isLab ? AppColors.craftPlum : AppColors.kraftGold).withAlpha(isDark ? 50 : 35),
+                              color: (isLab ? const Color(0xFF0284C7) : const Color(0xFF1E40AF)).withAlpha(isDark ? 50 : 25),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
@@ -890,16 +893,16 @@ class _TimetableScreenState extends State<TimetableScreen> {
                                 Icon(
                                   Icons.school_rounded,
                                   size: 11,
-                                  color: isLab ? AppColors.craftPlum : (isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309)),
+                                  color: isLab ? const Color(0xFF0284C7) : (isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  isLab ? 'LAB / PRACTICAL EXAM' : 'EXAM SESSION',
+                                  isLab ? 'LAB / PRACTICAL EXAM' : 'THEORY EXAM',
                                   style: TextStyle(
                                     fontSize: 9.5,
                                     fontWeight: FontWeight.w900,
                                     letterSpacing: 0.4,
-                                    color: isLab ? AppColors.craftPlum : (isDark ? const Color(0xFFFFD54F) : const Color(0xFFB45309)),
+                                    color: isLab ? const Color(0xFF0284C7) : (isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF)),
                                   ),
                                 ),
                               ],
@@ -1127,7 +1130,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final status = attendance.getDateStatus(cellDate, settings);
     final isHoliday = isInSemester && HolidayUtils.isHoliday(cellDate, settings);
     final isExamDay = attendance.isExamDate(cellDate);
-    final examAccentColor = isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
+    final examAccentColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
 
     return GestureDetector(
       onTap: () => attendance.setSelectedDate(cellDate),
@@ -1145,7 +1148,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       : (isHoliday
                           ? (isDark ? Colors.black26 : const Color(0xFFF3ECE0))
                           : (isExamDay
-                              ? (isDark ? const Color(0xFF2E243A) : const Color(0xFFF5EDFF))
+                              ? (isDark ? const Color(0xFF1E293B) : const Color(0xFFEFF6FF))
                               : Colors.transparent)))),
           borderRadius: BorderRadius.circular(10),
           border: isToday && !isSelected
@@ -1245,7 +1248,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Widget _buildCalendarLegend(bool isDark) {
-    final examAccentColor = isDark ? const Color(0xFFA78BFA) : const Color(0xFF7C3AED);
+    final examAccentColor = isDark ? const Color(0xFF60A5FA) : const Color(0xFF2563EB);
 
     return Container(
       padding: const EdgeInsets.only(top: 10),

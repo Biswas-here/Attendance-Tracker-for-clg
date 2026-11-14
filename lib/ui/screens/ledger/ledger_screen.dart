@@ -185,6 +185,20 @@ class _LedgerScreenState extends State<LedgerScreen> {
     final allSessions = attendance.allSessions;
     final isSemesterComplete = _checkSemesterComplete(settings, allSessions);
 
+    // Strictly filter Semester Finals (Theory & Lab Exams), ignoring regular/mid-term exams
+    final finalExams = allSessions
+        .where((s) =>
+            s.isExamSession &&
+            s.room != null &&
+            (s.room!.contains('Theory Exam') || s.room!.contains('Lab Exam')))
+        .toList()
+      ..sort((a, b) {
+        final cmp = a.date.compareTo(b.date);
+        if (cmp != 0) return cmp;
+        return a.startTime.compareTo(b.startTime);
+      });
+    final hasFinalExams = finalExams.isNotEmpty;
+
     final overallStats = attendance.overallStats;
     final activeClasses = attendance.getActiveClasses(null, settings);
     final scheduleSessions = attendance.getSessionsForDate(_scheduleDate, settings);
@@ -298,11 +312,19 @@ class _LedgerScreenState extends State<LedgerScreen> {
 
             const SizedBox(height: 12),
 
-            // ── SCHEDULE SECTION WITH [<] [>] DAY NAVIGATION ──────────────
-            StaggeredEntrance(
-              index: 1,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+            // When semester has completed AND the user has configured final exams:
+            // We hide the daily schedule & "no classes scheduled" card so the user sees the
+            // Semester Finals Roadmap directly first, followed by the start new semester option!
+            if (isSemesterComplete && hasFinalExams) ...[
+              _buildSemesterFinalsRoadmapCard(context, attendance, isDark, finalExams),
+              const SizedBox(height: 12),
+              _buildNewSemesterTimetableCard(context, isDark),
+            ] else ...[
+              // ── SCHEDULE SECTION WITH [<] [>] DAY NAVIGATION ──────────────
+              StaggeredEntrance(
+                index: 1,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
                 child: Row(
                 children: [
                   const Icon(Icons.today_rounded, size: 20, color: AppColors.craftTeal),
@@ -572,14 +594,15 @@ class _LedgerScreenState extends State<LedgerScreen> {
             // ── END OF SEMESTER TIMETABLE CREATION / SETUP CARD ─────────────
             if (isSemesterComplete) ...[
               const SizedBox(height: 12),
-              _buildSemesterFinalsRoadmapCard(context, attendance, isDark),
+              _buildSemesterFinalsRoadmapCard(context, attendance, isDark, finalExams),
               const SizedBox(height: 12),
               _buildNewSemesterTimetableCard(context, isDark),
             ],
           ],
-        ),
+        ],
       ),
-    );
+    ),
+  );
   }
 
   // ── INTEGRATED HERO MODULE ────────────────────────────────────────────────
@@ -1379,29 +1402,21 @@ class _LedgerScreenState extends State<LedgerScreen> {
     BuildContext context,
     AttendanceProvider attendance,
     bool isDark,
+    List<ClassSession> finals,
   ) {
-    final finals = attendance.allSessions
-        .where((s) => s.isExamSession && (s.room?.contains('Exam') == true || s.isExam))
-        .toList()
-      ..sort((a, b) {
-        final cmp = a.date.compareTo(b.date);
-        if (cmp != 0) return cmp;
-        return a.startTime.compareTo(b.startTime);
-      });
-
     if (finals.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: PaperCard(
           showTape: true,
-          tapeColor: const Color(0xFF7C3AED),
+          tapeColor: const Color(0xFF2563EB),
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF7C3AED), size: 22),
+                  const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF2563EB), size: 22),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1410,7 +1425,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.0,
-                        color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF5B21B6),
+                        color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF),
                       ),
                     ),
                   ),
@@ -1432,7 +1447,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 onPressed: () {
                   showDialog(
                     context: context,
-                    builder: (ctx) => FinalExamDialog(initialDate: DateTime.now()),
+                    builder: (ctx) => const FinalExamDialog(),
                   );
                 },
               ),
@@ -1445,105 +1460,212 @@ class _LedgerScreenState extends State<LedgerScreen> {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    int completedCount = 0;
+    final theoryExams = finals
+        .where((s) => s.room != null && s.room!.contains('Theory Exam'))
+        .toList();
+    final labExams = finals
+        .where((s) => s.room != null && s.room!.contains('Lab Exam'))
+        .toList();
+
+    int totalCompleted = 0;
     for (final s in finals) {
       final sDay = DateTime.tryParse(s.date);
       final isPast = sDay != null && today.isAfter(sDay);
       final examKey = '${s.date}_${s.startTime}_${s.subjectId}';
       if (isPast || _manuallyCompletedFinals.contains(examKey)) {
-        completedCount++;
+        totalCompleted++;
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── TOP SUMMARY BAR ────────────────────────────────────────────────
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Row(
+            children: [
+              const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF2563EB), size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'SEMESTER FINALS ROADMAP',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.8,
+                        color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF),
+                      ),
+                    ),
+                    Text(
+                      '$totalCompleted of ${finals.length} total exam papers completed',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => const FinalExamDialog(),
+                  );
+                },
+                icon: const Icon(Icons.edit_calendar_rounded, size: 16, color: Color(0xFF2563EB)),
+                label: const Text(
+                  'Edit',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Tip banner
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2563EB).withAlpha(isDark ? 28 : 16),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF2563EB).withAlpha(50)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.swipe_left_rounded, size: 15, color: Color(0xFF2563EB)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Slide left on any exam to manually tick or untick it',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // ── 1. THEORY EXAMINATIONS BOX (DARKER SHADE) ──────────────────────
+        if (theoryExams.isNotEmpty)
+          _buildExamCategoryBox(
+            context: context,
+            attendance: attendance,
+            isDark: isDark,
+            title: 'THEORY EXAMINATIONS',
+            icon: Icons.menu_book_rounded,
+            primaryColor: const Color(0xFF1E40AF),
+            exams: theoryExams,
+            today: today,
+            isLab: false,
+          ),
+
+        if (theoryExams.isNotEmpty && labExams.isNotEmpty)
+          const SizedBox(height: 10),
+
+        // ── 2. LAB / PRACTICAL EXAMINATIONS BOX (LIGHTER SHADE) ─────────────
+        if (labExams.isNotEmpty)
+          _buildExamCategoryBox(
+            context: context,
+            attendance: attendance,
+            isDark: isDark,
+            title: 'LAB / PRACTICAL EXAMINATIONS',
+            icon: Icons.science_rounded,
+            primaryColor: const Color(0xFF0284C7),
+            exams: labExams,
+            today: today,
+            isLab: true,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildExamCategoryBox({
+    required BuildContext context,
+    required AttendanceProvider attendance,
+    required bool isDark,
+    required String title,
+    required IconData icon,
+    required Color primaryColor,
+    required List<ClassSession> exams,
+    required DateTime today,
+    required bool isLab,
+  }) {
+    int completedInBox = 0;
+    for (final s in exams) {
+      final sDay = DateTime.tryParse(s.date);
+      final isPast = sDay != null && today.isAfter(sDay);
+      final examKey = '${s.date}_${s.startTime}_${s.subjectId}';
+      if (isPast || _manuallyCompletedFinals.contains(examKey)) {
+        completedInBox++;
       }
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: PaperCard(
         showTape: true,
-        tapeColor: const Color(0xFF7C3AED),
-        padding: const EdgeInsets.all(16),
+        tapeColor: primaryColor,
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.assignment_turned_in_rounded, color: Color(0xFF7C3AED), size: 22),
+                Icon(icon, color: primaryColor, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'SEMESTER FINALS ROADMAP',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.0,
-                          color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF5B21B6),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$completedCount of ${finals.length} exams completed',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (ctx) => FinalExamDialog(initialDate: DateTime.now()),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_calendar_rounded, size: 16, color: Color(0xFF7C3AED)),
-                  label: const Text(
-                    'Edit',
+                  child: Text(
+                    title,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF7C3AED),
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                      color: isDark ? primaryColor.withAlpha(230) : primaryColor,
                     ),
                   ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withAlpha(isDark ? 35 : 20),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: primaryColor.withAlpha(80)),
+                  ),
+                  child: Text(
+                    '$completedInBox / ${exams.length} Done',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: primaryColor,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7C3AED).withAlpha(isDark ? 28 : 16),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF7C3AED).withAlpha(50)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.swipe_left_rounded, size: 15, color: Color(0xFF7C3AED)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Slide left on any exam to manually tick or untick it',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? const Color(0xFFA78BFA) : const Color(0xFF5B21B6),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            ...finals.map((session) {
+            ...exams.map((session) {
               final sessionDay = DateTime.tryParse(session.date);
               final isPastDay = sessionDay != null && today.isAfter(sessionDay);
               final isToday = sessionDay != null && today.isAtSameMomentAs(sessionDay);
@@ -1554,10 +1676,9 @@ class _LedgerScreenState extends State<LedgerScreen> {
 
               final subject = attendance.getSubjectById(session.subjectId);
               final subjectName = subject?.name ?? session.subjectId;
-              final isLab = session.room?.toLowerCase().contains('lab') == true;
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Dismissible(
                   key: ValueKey(examKey),
                   direction: DismissDirection.endToStart,
@@ -1606,7 +1727,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                             ? AppColors.present.withAlpha(100)
                             : (isToday
                                 ? const Color(0xFFD97706)
-                                : const Color(0xFF7C3AED).withAlpha(100)),
+                                : primaryColor.withAlpha(90)),
                         width: isToday ? 1.6 : 1.2,
                       ),
                     ),
@@ -1618,9 +1739,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           decoration: BoxDecoration(
                             color: isCompleted
                                 ? AppColors.present.withAlpha(35)
-                                : (isLab
-                                    ? const Color(0xFF0284C7).withAlpha(35)
-                                    : const Color(0xFF7C3AED).withAlpha(35)),
+                                : primaryColor.withAlpha(30),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Icon(
@@ -1628,9 +1747,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                                 ? Icons.check_circle_rounded
                                 : (isLab ? Icons.science_rounded : Icons.auto_stories_rounded),
                             size: 19,
-                            color: isCompleted
-                                ? AppColors.present
-                                : (isLab ? const Color(0xFF0284C7) : const Color(0xFF7C3AED)),
+                            color: isCompleted ? AppColors.present : primaryColor,
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -1638,42 +1755,18 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      subjectName,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w800,
-                                        decoration: isCompleted ? TextDecoration.lineThrough : null,
-                                        color: isCompleted
-                                            ? (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)
-                                            : null,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: (isLab ? const Color(0xFF0284C7) : const Color(0xFF7C3AED))
-                                          .withAlpha(isDark ? 35 : 20),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Text(
-                                      isLab ? 'LAB' : 'THEORY',
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.5,
-                                        color: isLab ? const Color(0xFF0284C7) : const Color(0xFF7C3AED),
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                subjectName,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  decoration: isCompleted ? TextDecoration.lineThrough : null,
+                                  color: isCompleted
+                                      ? (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary)
+                                      : null,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 3),
                               Text(
@@ -1707,6 +1800,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                             isToday: isToday,
                             daysDiff: daysDiff,
                             isDark: isDark,
+                            accentColor: primaryColor,
                           ),
                         ),
                       ],
@@ -1726,6 +1820,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
     required bool isToday,
     required int daysDiff,
     required bool isDark,
+    Color accentColor = const Color(0xFF2563EB),
   }) {
     if (isCompleted) {
       return Container(
@@ -1807,21 +1902,21 @@ class _LedgerScreenState extends State<LedgerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: const Color(0xFF7C3AED).withAlpha(isDark ? 35 : 20),
+        color: accentColor.withAlpha(isDark ? 35 : 20),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF7C3AED).withAlpha(120)),
+        border: Border.all(color: accentColor.withAlpha(120)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.schedule_rounded, size: 12, color: Color(0xFF7C3AED)),
+          Icon(Icons.schedule_rounded, size: 12, color: accentColor),
           const SizedBox(width: 4),
           Text(
             'In $daysDiff d',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF7C3AED),
+              color: accentColor,
             ),
           ),
         ],

@@ -30,11 +30,11 @@ class ExamEntryItem {
 }
 
 class ExamScheduleDialog extends StatefulWidget {
-  final DateTime initialDate;
+  final DateTime? initialDate;
 
   const ExamScheduleDialog({
     super.key,
-    required this.initialDate,
+    this.initialDate,
   });
 
   @override
@@ -63,7 +63,8 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
   @override
   void initState() {
     super.initState();
-    _newExamDate = widget.initialDate;
+    final now = DateTime.now();
+    _newExamDate = widget.initialDate ?? DateTime(now.year, now.month, now.day);
     final subjects = context.read<AttendanceProvider>().subjects;
     if (subjects.isNotEmpty) {
       _selectedSubjectId = subjects.first.id;
@@ -158,7 +159,7 @@ class _ExamScheduleDialogState extends State<ExamScheduleDialog> {
         room: _roomController.text.trim().isNotEmpty ? _roomController.text.trim() : 'Exam Hall',
       ));
       _examList.sort((a, b) => a.date.compareTo(b.date));
-      _newExamDate = _newExamDate.add(const Duration(days: 2));
+      // Keep date as is or let user choose manually without auto-jumping days
     });
     HapticService.selection();
   }

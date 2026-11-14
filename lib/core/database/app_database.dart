@@ -392,7 +392,7 @@ class AppDatabase {
     final db = await database;
     return await db.delete(
       'class_sessions',
-      where: 'status = ? AND (date < ? OR date > ?)',
+      where: 'status = ? AND (date < ? OR date > ?) AND is_exam = 0',
       whereArgs: [AttendanceStatus.unmarked.name, startDateStr, endDateStr],
     );
   }

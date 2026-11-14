@@ -36,11 +36,11 @@ class FinalExamItem {
 }
 
 class FinalExamDialog extends StatefulWidget {
-  final DateTime initialDate;
+  final DateTime? initialDate;
 
   const FinalExamDialog({
     super.key,
-    required this.initialDate,
+    this.initialDate,
   });
 
   @override
@@ -61,7 +61,8 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialDate;
+    final now = DateTime.now();
+    _selectedDate = widget.initialDate ?? DateTime(now.year, now.month, now.day);
     _locationController = TextEditingController(text: 'Exam Hall');
     final subjects = context.read<AttendanceProvider>().subjects;
     if (subjects.isNotEmpty) {
@@ -185,7 +186,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
             : (_selectedKind == FinalExamKind.lab ? 'Lab 1' : 'Exam Hall'),
       ));
       _finalsList.sort((a, b) => a.date.compareTo(b.date));
-      _selectedDate = _selectedDate.add(const Duration(days: 2));
+      // Keep date as is or reset to today without jumping to random dates
     });
     HapticService.selection();
   }
@@ -333,7 +334,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
                           subtitle: 'Written paper',
                           icon: Icons.article_outlined,
                           isSelected: _selectedKind == FinalExamKind.theory,
-                          activeColor: AppColors.craftTeal,
+                          activeColor: const Color(0xFF1E40AF),
                           onTap: () => _onKindChanged(FinalExamKind.theory),
                           isDark: isDark,
                         ),
@@ -345,7 +346,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
                           subtitle: 'Viva & experiment',
                           icon: Icons.science_outlined,
                           isSelected: _selectedKind == FinalExamKind.lab,
-                          activeColor: AppColors.craftPlum,
+                          activeColor: const Color(0xFF0284C7),
                           onTap: () => _onKindChanged(FinalExamKind.lab),
                           isDark: isDark,
                         ),
@@ -534,7 +535,7 @@ class _FinalExamDialogState extends State<FinalExamDialog> {
                       final idx = entry.key;
                       final exam = entry.value;
                       final isLab = exam.kind == FinalExamKind.lab;
-                      final tagColor = isLab ? AppColors.craftPlum : AppColors.craftTeal;
+                      final tagColor = isLab ? const Color(0xFF0284C7) : const Color(0xFF1E40AF);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 5),

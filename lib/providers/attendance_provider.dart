@@ -415,10 +415,17 @@ class AttendanceProvider with ChangeNotifier {
     // 1. Remove unmarked sessions outside the new semester range
     final removed = await AppDatabase.instance.deleteUnmarkedSessionsOutsideRange(sStr, eStr);
 
-    // 2. Fetch any explicit rules from DB
+    // 2. Terminate exams that conflict with new semester bounds
+    await pruneExamsOnSemesterBoundsChanged(
+      newStartDateStr: sStr,
+      newEndDateStr: eStr,
+      settings: userSettings,
+    );
+
+    // 3. Fetch any explicit rules from DB
     final dbRules = await AppDatabase.instance.getAllScheduleRules();
 
-    // 3. Derive recurring weekly templates from rules and existing sessions
+    // 4. Derive recurring weekly templates from rules and existing sessions
     final templates = <String, ({int weekday, String startTime, String endTime, String subjectId, String? room})>{};
 
     for (final rule in dbRules) {
@@ -433,6 +440,7 @@ class AttendanceProvider with ChangeNotifier {
     }
 
     for (final s in _allSessions) {
+      if (s.isExamSession) continue; // CRITICAL: Exam sessions must NEVER become recurring weekly templates!
       final dt = DateTime.tryParse(s.date);
       if (dt == null) continue;
       final key = '${dt.weekday}|${s.startTime}|${s.endTime}|${s.subjectId}';
@@ -978,5 +986,80 @@ class AttendanceProvider with ChangeNotifier {
 
     await loadData(showLoading: false, userSettings: settings);
     await syncAllUpcomingNotifications(settings);
+  }
+
+  /// Prunes / terminates exams when semester bounds are changed:
+  /// 1. Finals (theory/lab exams) that now fall inside the active semester (date <= newEndDateStr && date >= newStartDateStr) are terminated.
+  /// 2. Mid-semester exams that now fall outside the new semester bounds (date < newStartDateStr || date > newEndDateStr) are terminated.
+  Future<void> pruneExamsOnSemesterBoundsChanged({
+    required String newStartDateStr,
+    required String newEndDateStr,
+    UserSettings? settings,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // A. Check Semester Finals: finals cannot be inside the semester
+    final savedFinals = await getSavedFinalsSchedule();
+    if (savedFinals != null) {
+      final rawList = savedFinals['finals'] as List? ?? [];
+      final updatedFinals = <Map<String, dynamic>>[];
+      final terminatedFinalDates = <String>[];
+
+      for (final item in rawList) {
+        if (item is Map) {
+          final dStr = item['date'] as String?;
+          if (dStr != null) {
+            // If this final exam now falls inside the semester bounds, terminate it!
+            if (dStr.compareTo(newStartDateStr) >= 0 && dStr.compareTo(newEndDateStr) <= 0) {
+              terminatedFinalDates.add(dStr);
+              await AppDatabase.instance.deleteExamSessionsForDate(dStr);
+            } else {
+              updatedFinals.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+      }
+
+      if (updatedFinals.isEmpty) {
+        await prefs.remove(_prefKeyFinalsSchedule);
+      } else if (terminatedFinalDates.isNotEmpty) {
+        await saveFinalsSchedule({
+          'finals': updatedFinals,
+          'updatedAt': DateTime.now().toIso8601String(),
+        });
+      }
+    }
+
+    // B. Check Midterm / Inside-Semester Exams: midterms cannot be outside the semester bounds
+    final savedExams = await getSavedExamSchedule();
+    if (savedExams != null) {
+      final rawExams = savedExams['exams'] as List? ?? [];
+      final updatedExams = <Map<String, dynamic>>[];
+      final terminatedExamDates = <String>[];
+
+      for (final item in rawExams) {
+        if (item is Map) {
+          final dStr = item['date'] as String?;
+          if (dStr != null) {
+            // If mid-semester exam now falls OUTSIDE the semester bounds, terminate it!
+            if (dStr.compareTo(newStartDateStr) < 0 || dStr.compareTo(newEndDateStr) > 0) {
+              terminatedExamDates.add(dStr);
+              await AppDatabase.instance.deleteExamSessionsForDate(dStr);
+            } else {
+              updatedExams.add(Map<String, dynamic>.from(item));
+            }
+          }
+        }
+      }
+
+      if (updatedExams.isEmpty) {
+        await prefs.remove(_prefKeyExamSchedule);
+      } else if (terminatedExamDates.isNotEmpty) {
+        final newConfig = Map<String, dynamic>.from(savedExams);
+        newConfig['exams'] = updatedExams;
+        newConfig['updatedAt'] = DateTime.now().toIso8601String();
+        await saveExamSchedule(newConfig);
+      }
+    }
   }
 }

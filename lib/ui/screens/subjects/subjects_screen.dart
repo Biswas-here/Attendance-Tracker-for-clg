@@ -193,11 +193,9 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                           final subTarget = subject.targetPercentage ?? settings.defaultAttendanceTarget;
                           final meetsTarget = stats.meetsTarget(subTarget);
 
-                          return StaggeredEntrance(
-                            index: 1 + (index < 6 ? index : 6),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                              child: PaperCard(
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                            child: PaperCard(
                               onTap: () {
                                 Navigator.push(
                                   context,
@@ -288,9 +286,8 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
                                 ],
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
                       ),
           ),
         ],

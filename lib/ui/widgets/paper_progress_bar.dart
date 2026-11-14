@@ -233,28 +233,15 @@ class _PaperCircularProgressState extends State<PaperCircularProgress>
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Background track
-              SizedBox(
-                width: widget.size,
-                height: widget.size,
-                child: CircularProgressIndicator(
-                  value: 1.0,
+              CustomPaint(
+                size: Size(widget.size, widget.size),
+                painter: _PaperCircularProgressPainter(
+                  progress: progressVal,
                   strokeWidth: widget.strokeWidth,
-                  color: trackColor,
+                  trackColor: trackColor,
+                  progressColor: progressColor,
                 ),
               ),
-              // Actual animated value arc
-              if (widget.percentage != null)
-                SizedBox(
-                  width: widget.size,
-                  height: widget.size,
-                  child: CircularProgressIndicator(
-                    value: progressVal,
-                    strokeWidth: widget.strokeWidth,
-                    strokeCap: StrokeCap.round,
-                    color: progressColor,
-                  ),
-                ),
               // Inner text content counting up
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -285,6 +272,65 @@ class _PaperCircularProgressState extends State<PaperCircularProgress>
         );
       },
     );
+  }
+}
+
+class _PaperCircularProgressPainter extends CustomPainter {
+  final double progress;
+  final double strokeWidth;
+  final Color trackColor;
+  final Color progressColor;
+
+  const _PaperCircularProgressPainter({
+    required this.progress,
+    required this.strokeWidth,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    // 1. Draw smooth background track circle (full 360 degree ring)
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    canvas.drawCircle(center, radius, trackPaint);
+
+    // 2. Draw smooth continuous single progress arc (starts at 12 o'clock / -pi/2)
+    if (progress >= 0.999) {
+      final fullPaint = Paint()
+        ..color = progressColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth;
+      canvas.drawCircle(center, radius, fullPaint);
+    } else if (progress > 0) {
+      final sweepAngle = 2 * math.pi * progress.clamp(0.0, 1.0);
+      final progressPaint = Paint()
+        ..color = progressColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        sweepAngle,
+        false,
+        progressPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PaperCircularProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.progressColor != progressColor ||
+        oldDelegate.trackColor != trackColor ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }
 

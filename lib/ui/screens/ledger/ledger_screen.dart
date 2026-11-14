@@ -400,134 +400,129 @@ class _LedgerScreenState extends State<LedgerScreen> {
               ),
             ),
           ] else ...[
-            ...scheduleSessions.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final session = entry.value;
+            ...scheduleSessions.map((session) {
               final sub = subjectsMap[session.subjectId];
               final roomStr = (sub != null)
                   ? (sub.room != null && sub.room!.trim().isNotEmpty ? sub.room!.trim() : null)
                   : (session.room != null && session.room!.trim().isNotEmpty ? session.room!.trim() : null);
 
-              return StaggeredEntrance(
-                index: 2 + (idx < 5 ? idx : 5),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: PaperCard(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    child: Row(
-                      children: [
-                        NerdySubjectBadge(
-                          subjectName: sub?.name ?? 'Class',
-                          subjectId: sub?.id,
-                          colorValue: sub?.colorValue ?? 0xFF3F7E7D,
-                          size: 38,
-                          iconSize: 22,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                sub?.name ?? 'Scheduled Class',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: PaperCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  child: Row(
+                    children: [
+                      NerdySubjectBadge(
+                        subjectName: sub?.name ?? 'Class',
+                        subjectId: sub?.id,
+                        colorValue: sub?.colorValue ?? 0xFF3F7E7D,
+                        size: 38,
+                        iconSize: 22,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              sub?.name ?? 'Scheduled Class',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
                               ),
-                              if (roomStr != null) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.meeting_room_outlined,
-                                      size: 11,
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        roomStr.toLowerCase().startsWith('room')
-                                            ? roomStr
-                                            : 'Room $roomStr',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                              if (sub?.teacher != null && sub!.teacher!.trim().isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.person_outline_rounded,
-                                      size: 11,
-                                      color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                    ),
-                                    const SizedBox(width: 3),
-                                    Flexible(
-                                      child: Text(
-                                        sub.teacher!.trim(),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            ),
+                            if (roomStr != null) ...[
                               const SizedBox(height: 2),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons.access_time_rounded,
+                                    Icons.meeting_room_outlined,
                                     size: 11,
                                     color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                                   ),
                                   const SizedBox(width: 3),
                                   Flexible(
                                     child: Text(
-                                      AppDateUtils.formatTimeRange(session.startTime, session.endTime),
+                                      roomStr.toLowerCase().startsWith('room')
+                                          ? roomStr
+                                          : 'Room $roomStr',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: isDark
-                                            ? AppColors.darkTextSecondary
-                                            : AppColors.lightTextSecondary,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
                             ],
-                          ),
+                            if (sub?.teacher != null && sub!.teacher!.trim().isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.person_outline_rounded,
+                                    size: 11,
+                                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Flexible(
+                                    child: Text(
+                                      sub.teacher!.trim(),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 2),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.access_time_rounded,
+                                  size: 11,
+                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                ),
+                                const SizedBox(width: 3),
+                                Flexible(
+                                  child: Text(
+                                    AppDateUtils.formatTimeRange(session.startTime, session.endTime),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark
+                                          ? AppColors.darkTextSecondary
+                                          : AppColors.lightTextSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        QuickAttendanceStamps(
-                          currentStatus: session.status,
-                          onStatusChanged: (newStatus) {
-                            attendance.markAttendance(session.id, newStatus);
-                          },
-                        ),
-                      ],
-                    ),
+                      ),
+                      QuickAttendanceStamps(
+                        currentStatus: session.status,
+                        onStatusChanged: (newStatus) {
+                          attendance.markAttendance(session.id, newStatus);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -561,7 +556,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: SizedBox(
-          height: 236,
+          height: 302,
           child: _buildOverallAttendanceCard(
             overallStats: overallStats,
             target: target,
@@ -584,7 +579,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
     return Column(
       children: [
         SizedBox(
-          height: 252,
+          height: 318,
           child: PageView(
             controller: _heroPageController,
             onPageChanged: (idx) {
@@ -827,17 +822,17 @@ class _LedgerScreenState extends State<LedgerScreen> {
                     subjectName: subject?.name ?? 'Class',
                     subjectId: subject?.id,
                     colorValue: subject?.colorValue ?? 0xFFE65100,
-                    size: 46,
-                    iconSize: 26,
+                    size: 56,
+                    iconSize: 30,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Text(
                     subject?.name ?? 'Scheduled Class',
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.5,
                     ),
@@ -855,7 +850,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           children: [
                             Icon(
                               Icons.meeting_room_outlined,
-                              size: 12,
+                              size: 13,
                               color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                             ),
                             const SizedBox(width: 4),
@@ -864,7 +859,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                                   ? activeRoomStr
                                   : 'Room $activeRoomStr',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                               ),
@@ -877,14 +872,14 @@ class _LedgerScreenState extends State<LedgerScreen> {
                           children: [
                             Icon(
                               Icons.person_outline_rounded,
-                              size: 12,
+                              size: 13,
                               color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               subject.teacher!.trim(),
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                                 color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                               ),
@@ -901,10 +896,10 @@ class _LedgerScreenState extends State<LedgerScreen> {
           // Buttons: Present / Absent
           if (isAlreadyMarked) ...[
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark ? Colors.black38 : Colors.white70,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
                 ),
@@ -912,14 +907,14 @@ class _LedgerScreenState extends State<LedgerScreen> {
               child: Row(
                 children: [
                   PaperStampBadge(status: session.status, compact: true),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Marked. Swipe for stats →',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
                       ),
@@ -935,11 +930,11 @@ class _LedgerScreenState extends State<LedgerScreen> {
                       onMark(newStatus);
                     },
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       child: Text(
                         session.status == AttendanceStatus.present ? 'Switch Absent' : 'Switch Present',
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                           color: AppColors.craftTeal,
                         ),
@@ -957,21 +952,21 @@ class _LedgerScreenState extends State<LedgerScreen> {
                     title: 'PRESENT',
                     color: AppColors.present,
                     icon: Icons.check_circle_rounded,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                    iconSize: 22,
-                    fontSize: 13,
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                    iconSize: 28,
+                    fontSize: 15,
                     onTap: () => onMark(AttendanceStatus.present),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: AttendanceActionButton(
                     title: 'ABSENT',
                     color: AppColors.absent,
                     icon: Icons.cancel_rounded,
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                    iconSize: 22,
-                    fontSize: 13,
+                    padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                    iconSize: 28,
+                    fontSize: 15,
                     onTap: () => onMark(AttendanceStatus.absent),
                   ),
                 ),
@@ -1024,28 +1019,18 @@ class _LedgerScreenState extends State<LedgerScreen> {
       showTape: true,
       tapeColor: AppColors.kraftGold,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: isSemesterComplete
-          ? SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: _buildOverallCardBody(
-                overallStats: overallStats,
-                target: target,
-                isDark: isDark,
-                isSemesterComplete: true,
-                roastTag: roastTag,
-                roastColor: roastColor,
-                roastMessage: roastMessage,
-              ),
-            )
-          : _buildOverallCardBody(
-              overallStats: overallStats,
-              target: target,
-              isDark: isDark,
-              isSemesterComplete: false,
-              roastTag: roastTag,
-              roastColor: roastColor,
-              roastMessage: roastMessage,
-            ),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: _buildOverallCardBody(
+          overallStats: overallStats,
+          target: target,
+          isDark: isDark,
+          isSemesterComplete: isSemesterComplete,
+          roastTag: roastTag,
+          roastColor: roastColor,
+          roastMessage: roastMessage,
+        ),
+      ),
     );
   }
 
@@ -1067,8 +1052,8 @@ class _LedgerScreenState extends State<LedgerScreen> {
             PaperCircularProgress(
               percentage: overallStats.percentage,
               targetPercentage: target,
-              size: 130,
-              strokeWidth: 11.5,
+              size: isSemesterComplete ? 116 : 138,
+              strokeWidth: isSemesterComplete ? 10.5 : 12.0,
               animTrigger: _animTrigger,
             ),
             const SizedBox(width: 16),
@@ -1153,7 +1138,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
 
         // IF SEMESTER COMPLETED: Show Congratulations & Gen-Z Exam Roasts!
         if (isSemesterComplete) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -1177,16 +1162,17 @@ class _LedgerScreenState extends State<LedgerScreen> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
-                    const Text('🎓', style: TextStyle(fontSize: 18)),
+                    const Text('🎓', style: TextStyle(fontSize: 16)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'CONGRATULATIONS ON COMPLETING THE SEMESTER!',
                         style: TextStyle(
-                          fontSize: 10.5,
+                          fontSize: 10,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 0.8,
                           color: isDark ? AppColors.kraftGold : const Color(0xFF916A00),
@@ -1217,9 +1203,9 @@ class _LedgerScreenState extends State<LedgerScreen> {
                 Text(
                   roastMessage,
                   style: TextStyle(
-                    fontSize: 11.5,
-                    height: 1.4,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 11,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
                     color: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
                   ),
                 ),
@@ -1227,6 +1213,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
             ),
           ),
         ] else ...[
+          const SizedBox(height: 12),
           _buildAttendanceInsightBanner(
             overallStats: overallStats,
             target: target,
@@ -1441,32 +1428,78 @@ class _LedgerScreenState extends State<LedgerScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: badgeColor.withAlpha(isDark ? 28 : 18),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: badgeColor.withAlpha(90)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: badgeColor.withAlpha(90), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(18),
+            color: Colors.black.withAlpha(14),
             offset: const Offset(0, 2),
             blurRadius: 4,
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18, color: badgeColor),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.lightTextPrimary,
+          Row(
+            children: [
+              Icon(icon, size: 19, color: badgeColor),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                    color: isDark ? Colors.white : AppColors.lightTextPrimary,
+                  ),
+                ),
               ),
-            ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withAlpha(18) : Colors.black.withAlpha(10),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'Target: ${target.toInt()}%',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: badgeColor.withAlpha(isDark ? 45 : 25),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: badgeColor.withAlpha(90)),
+                ),
+                child: Text(
+                  meets
+                      ? (canMiss > 0 ? '🛡️ Safe to miss: $canMiss' : '🎯 On the mark')
+                      : '🚨 Need $needed in a row',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: badgeColor,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

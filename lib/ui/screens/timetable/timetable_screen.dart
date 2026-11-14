@@ -714,16 +714,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
               ),
             )
           else
-            ...daySessions.asMap().entries.map((entry) {
-              final idx = entry.key;
-              final session = entry.value;
+            ...daySessions.map((session) {
               final sub = subjectsMap[session.subjectId];
 
-              return StaggeredEntrance(
-                index: 3 + (idx < 5 ? idx : 5),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                  child: PaperCard(
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+                child: PaperCard(
                   padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -847,9 +843,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     ],
                   ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
         ],
       ),
     );

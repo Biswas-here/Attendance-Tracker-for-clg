@@ -14,11 +14,17 @@ class AttendanceProvider with ChangeNotifier {
   List<Subject> _subjects = [];
   List<ClassSession> _allSessions = [];
   Map<String, List<ClassSession>> _sessionsByDate = {};
+  Map<String, List<ClassSession>> _sessionsBySubject = {};
+  Map<String, Subject> _subjectsById = {};
+  OverallAttendanceStats? _cachedOverallStats;
+  Map<String, SubjectAttendanceStats> _cachedSubjectStats = {};
   DateTime _selectedDate = DateTime.now();
   bool _isLoading = true;
   Timer? _activeClassCheckTimer;
+  String _lastActiveSessionHash = '';
 
   List<Subject> get subjects => _subjects;
+  Map<String, Subject> get subjectsMap => _subjectsById;
   List<ClassSession> get allSessions => _allSessions;
   DateTime get selectedDate => _selectedDate;
   bool get isLoading => _isLoading;
@@ -26,9 +32,27 @@ class AttendanceProvider with ChangeNotifier {
   final _uuid = const Uuid();
 
   AttendanceProvider() {
-    // Check for active classes periodically every 30 seconds
-    _activeClassCheckTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      notifyListeners();
+    // Check for active class transitions periodically (every 15s)
+    // Only triggers a rebuild if an active session actually started or ended!
+    _activeClassCheckTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      final now = DateTime.now();
+      final todayStr = AppDateUtils.formatDateYmd(now);
+      final todaySessions = _sessionsByDate[todayStr];
+      if (todaySessions == null || todaySessions.isEmpty) {
+        if (_lastActiveSessionHash.isNotEmpty) {
+          _lastActiveSessionHash = '';
+          notifyListeners();
+        }
+        return;
+      }
+      final activeIds = todaySessions
+          .where((s) => s.isCurrentlyActive(now))
+          .map((s) => s.id)
+          .join(',');
+      if (activeIds != _lastActiveSessionHash) {
+        _lastActiveSessionHash = activeIds;
+        notifyListeners();
+      }
     });
   }
 
@@ -56,14 +80,26 @@ class AttendanceProvider with ChangeNotifier {
   }
 
   void _rebuildSessionsIndex() {
-    final Map<String, List<ClassSession>> map = {};
+    final Map<String, List<ClassSession>> byDate = {};
+    final Map<String, List<ClassSession>> bySubject = {};
     for (final s in _allSessions) {
-      map.putIfAbsent(s.date, () => []).add(s);
+      byDate.putIfAbsent(s.date, () => []).add(s);
+      bySubject.putIfAbsent(s.subjectId, () => []).add(s);
     }
-    for (final list in map.values) {
+    for (final list in byDate.values) {
       list.sort((a, b) => a.startTime.compareTo(b.startTime));
     }
-    _sessionsByDate = map;
+    _sessionsByDate = byDate;
+    _sessionsBySubject = bySubject;
+    _subjectsById = {for (var s in _subjects) s.id: s};
+
+    // Precalculate and memoize stats so UI getters run in instant O(1)
+    _cachedOverallStats = AttendanceCalculator.calculateOverallStats(_allSessions);
+    final Map<String, SubjectAttendanceStats> subStats = {};
+    for (final sub in _subjects) {
+      subStats[sub.id] = AttendanceCalculator.calculateSubjectStats(bySubject[sub.id] ?? const []);
+    }
+    _cachedSubjectStats = subStats;
   }
 
   void setSelectedDate(DateTime date) {
@@ -71,23 +107,19 @@ class AttendanceProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // --- STATS CALCULATIONS ---
+  // --- STATS CALCULATIONS (Instant O(1) cached access) ---
 
   OverallAttendanceStats get overallStats {
-    return AttendanceCalculator.calculateOverallStats(_allSessions);
+    return _cachedOverallStats ?? AttendanceCalculator.calculateOverallStats(_allSessions);
   }
 
   SubjectAttendanceStats getSubjectStats(String subjectId) {
-    final subSessions = _allSessions.where((s) => s.subjectId == subjectId).toList();
-    return AttendanceCalculator.calculateSubjectStats(subSessions);
+    return _cachedSubjectStats[subjectId] ??
+        AttendanceCalculator.calculateSubjectStats(_sessionsBySubject[subjectId] ?? const []);
   }
 
   Subject? getSubjectById(String id) {
-    try {
-      return _subjects.firstWhere((s) => s.id == id);
-    } catch (_) {
-      return null;
-    }
+    return _subjectsById[id];
   }
 
   // --- ACTIVE CLASS MODE ---
@@ -96,24 +128,27 @@ class AttendanceProvider with ChangeNotifier {
   List<ClassSession> getActiveClasses([DateTime? customNow, UserSettings? settings]) {
     final now = customNow ?? DateTime.now();
     if (settings != null && settings.hasSemesterRange && !settings.isDateInSemester(now)) {
-      return [];
+      return const [];
     }
     final todayStr = AppDateUtils.formatDateYmd(now);
+    final todaySessions = _sessionsByDate[todayStr];
+    if (todaySessions == null || todaySessions.isEmpty) return const [];
 
-    return _allSessions.where((s) {
-      if (s.date != todayStr) return false;
-      return s.isCurrentlyActive(now);
-    }).toList();
+    return todaySessions.where((s) => s.isCurrentlyActive(now)).toList();
   }
 
   // --- TIMETABLE / CALENDAR HELPERS ---
 
   List<ClassSession> getSessionsForDate(DateTime date, [UserSettings? settings]) {
     if (settings != null && settings.hasSemesterRange && !settings.isDateInSemester(date)) {
-      return [];
+      return const [];
     }
     final dateStr = AppDateUtils.formatDateYmd(date);
     return _sessionsByDate[dateStr] ?? const [];
+  }
+
+  List<ClassSession> getSessionsForSubject(String subjectId) {
+    return _sessionsBySubject[subjectId] ?? const [];
   }
 
   List<ClassSession> get sessionsForSelectedDate => getSessionsForSelectedDate();

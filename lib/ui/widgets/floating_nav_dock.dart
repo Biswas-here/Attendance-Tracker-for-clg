@@ -21,18 +21,19 @@ class FloatingNavDock extends StatelessWidget {
     final dockBorder = isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong;
 
     return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        decoration: BoxDecoration(
-          color: dockBg,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: dockBorder, width: 1.5),
-          boxShadow: PaperDecorations.dockShadow(isDark: isDark),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
+      child: RepaintBoundary(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: dockBg,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: dockBorder, width: 1.5),
+            boxShadow: PaperDecorations.dockShadow(isDark: isDark),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
             _buildNavItem(
               context: context,
               index: 0,
@@ -68,7 +69,8 @@ class FloatingNavDock extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildNavItem({

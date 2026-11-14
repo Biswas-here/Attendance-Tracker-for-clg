@@ -38,6 +38,16 @@ class _LedgerScreenState extends State<LedgerScreen> {
   int _activeHeroPage = 0;
   String? _selectedActiveSessionId;
   int _animTrigger = 0;
+  String? _cachedProfilePath;
+  bool _cachedProfileExists = false;
+
+  bool _profileImageExists(String? path) {
+    if (path == null || path.isEmpty) return false;
+    if (path == _cachedProfilePath) return _cachedProfileExists;
+    _cachedProfilePath = path;
+    _cachedProfileExists = File(path).existsSync();
+    return _cachedProfileExists;
+  }
 
   @override
   void didUpdateWidget(covariant LedgerScreen oldWidget) {
@@ -82,7 +92,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final attendance = context.watch<AttendanceProvider>();
+    final attendance = Provider.of<AttendanceProvider>(context, listen: false);
     if (!_isSameDay(_scheduleDate, attendance.selectedDate)) {
       _scheduleDate = attendance.selectedDate;
     }
@@ -145,18 +155,17 @@ class _LedgerScreenState extends State<LedgerScreen> {
     final isSemesterComplete = _checkSemesterComplete(settings, allSessions);
 
     final overallStats = attendance.overallStats;
-    final subjects = attendance.subjects;
     final activeClasses = attendance.getActiveClasses(null, settings);
     final scheduleSessions = attendance.getSessionsForDate(_scheduleDate, settings);
 
-    final subjectsMap = {for (var s in subjects) s.id: s};
+    final subjectsMap = attendance.subjectsMap;
     final profilePath = settingsProv.settings.profileImagePath;
 
     return Scaffold(
       appBar: AppBar(
         title: Row(
           children: [
-            if (profilePath != null && File(profilePath).existsSync()) ...[
+            if (_profileImageExists(profilePath)) ...[
               Container(
                 width: 38,
                 height: 38,
@@ -172,7 +181,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
                     ),
                   ],
                   image: DecorationImage(
-                    image: FileImage(File(profilePath)),
+                    image: FileImage(File(profilePath!)),
                     fit: BoxFit.cover,
                   ),
                 ),

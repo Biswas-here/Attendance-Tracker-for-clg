@@ -7,7 +7,12 @@ class AppDateUtils {
   static final DateFormat _monthYearFormat = DateFormat('MMMM yyyy');
   static final DateFormat _timeFormat12 = DateFormat('h:mm a');
 
-  static String formatDateYmd(DateTime date) => _ymdFormat.format(date);
+  static String formatDateYmd(DateTime date) {
+    final y = date.year;
+    final m = date.month < 10 ? '0${date.month}' : '${date.month}';
+    final d = date.day < 10 ? '0${date.day}' : '${date.day}';
+    return '$y-$m-$d';
+  }
   static String formatDisplayDate(DateTime date) => _displayDateFormat.format(date);
   static String formatShortDate(DateTime date) => _shortDateFormat.format(date);
   static String formatMonthYear(DateTime date) => _monthYearFormat.format(date);

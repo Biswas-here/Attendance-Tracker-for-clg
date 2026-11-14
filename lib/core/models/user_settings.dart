@@ -39,22 +39,28 @@ class UserSettings {
       semesterStartDate!.trim().isNotEmpty &&
       semesterEndDate!.trim().isNotEmpty;
 
-  DateTime? get semesterStartDateTime {
-    if (semesterStartDate == null || semesterStartDate!.trim().isEmpty) return null;
+  late final DateTime? semesterStartDateTime = _parseDate(semesterStartDate);
+  late final DateTime? semesterEndDateTime = _parseDate(semesterEndDate);
+  late final Set<String> customHolidaysSet = _parseHolidays(customHolidays);
+
+  static DateTime? _parseDate(String? str) {
+    if (str == null) return null;
+    final trimmed = str.trim();
+    if (trimmed.isEmpty) return null;
     try {
-      return DateTime.parse(semesterStartDate!.trim());
+      return DateTime.parse(trimmed);
     } catch (_) {
       return null;
     }
   }
 
-  DateTime? get semesterEndDateTime {
-    if (semesterEndDate == null || semesterEndDate!.trim().isEmpty) return null;
-    try {
-      return DateTime.parse(semesterEndDate!.trim());
-    } catch (_) {
-      return null;
-    }
+  static Set<String> _parseHolidays(String holidaysStr) {
+    if (holidaysStr.trim().isEmpty) return const {};
+    return holidaysStr
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toSet();
   }
 
   bool get isSemesterEnded {
@@ -78,14 +84,7 @@ class UserSettings {
     return !d.isBefore(s) && !d.isAfter(e);
   }
 
-  List<String> get customHolidaysList {
-    if (customHolidays.trim().isEmpty) return [];
-    return customHolidays
-        .split(',')
-        .map((s) => s.trim())
-        .where((s) => s.isNotEmpty)
-        .toList();
-  }
+  List<String> get customHolidaysList => customHolidaysSet.toList();
 
   Map<String, dynamic> toMap() {
     return {

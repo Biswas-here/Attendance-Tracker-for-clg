@@ -32,16 +32,18 @@ class PaperLinearProgress extends StatelessWidget {
 
     return SizedBox(
       height: height,
-      child: CustomPaint(
-        painter: _RetroSegmentBarPainter(
-          progress: val,
-          targetProgress: targetVal,
-          fillColor: fillColor,
-          isDark: isDark,
-          showTargetPin: showTargetPin && percentage != null,
-          borderRadius: math.min(borderRadius, height / 2),
+      child: RepaintBoundary(
+        child: CustomPaint(
+          painter: _RetroSegmentBarPainter(
+            progress: val,
+            targetProgress: targetVal,
+            fillColor: fillColor,
+            isDark: isDark,
+            showTargetPin: showTargetPin && percentage != null,
+            borderRadius: math.min(borderRadius, height / 2),
+          ),
+          child: const SizedBox.expand(),
         ),
-        child: const SizedBox.expand(),
       ),
     );
   }

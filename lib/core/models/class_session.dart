@@ -112,21 +112,12 @@ class ClassSession {
     );
   }
 
-  DateTime get startDateTime {
-    final parts = date.split('-');
-    final timeParts = startTime.split(':');
-    return DateTime(
-      int.parse(parts[0]),
-      int.parse(parts[1]),
-      int.parse(parts[2]),
-      int.parse(timeParts[0]),
-      int.parse(timeParts[1]),
-    );
-  }
+  late final DateTime startDateTime = _parseDateTime(date, startTime);
+  late final DateTime endDateTime = _parseDateTime(date, endTime);
 
-  DateTime get endDateTime {
-    final parts = date.split('-');
-    final timeParts = endTime.split(':');
+  static DateTime _parseDateTime(String dStr, String tStr) {
+    final parts = dStr.split('-');
+    final timeParts = tStr.split(':');
     return DateTime(
       int.parse(parts[0]),
       int.parse(parts[1]),

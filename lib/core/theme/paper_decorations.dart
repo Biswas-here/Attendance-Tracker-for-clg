@@ -2,6 +2,39 @@ import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
 class PaperDecorations {
+  static BoxDecoration? _defaultLightCard;
+  static BoxDecoration? _defaultDarkCard;
+
+  static const _lightDockShadow = [
+    BoxShadow(
+      color: Color(0x3C000000), // withAlpha(60)
+      offset: Offset(0, 8),
+      blurRadius: 24,
+      spreadRadius: 2,
+    ),
+    BoxShadow(
+      color: Color(0x23000000), // withAlpha(35)
+      offset: Offset(0, 2),
+      blurRadius: 6,
+      spreadRadius: 0,
+    ),
+  ];
+
+  static const _darkDockShadow = [
+    BoxShadow(
+      color: Color(0xAA000000), // withAlpha(170)
+      offset: Offset(0, 8),
+      blurRadius: 24,
+      spreadRadius: 2,
+    ),
+    BoxShadow(
+      color: Color(0x5A000000), // withAlpha(90)
+      offset: Offset(0, 2),
+      blurRadius: 6,
+      spreadRadius: 0,
+    ),
+  ];
+
   // ---------------------------------------------------------------------------
   // CARD DECORATIONS - Depth effect uses crisp black drop shadows
   // ---------------------------------------------------------------------------
@@ -16,6 +49,27 @@ class PaperDecorations {
     bool raised = true,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Cache the most commonly used default paper card decorations
+    if (color == null && borderColor == null && borderWidth == 1.5 && borderRadius == 16.0 && raised) {
+      if (isDark) {
+        return _defaultDarkCard ??= _buildPaperCardDecoration(isDark, null, null, borderWidth, borderRadius, raised);
+      } else {
+        return _defaultLightCard ??= _buildPaperCardDecoration(isDark, null, null, borderWidth, borderRadius, raised);
+      }
+    }
+
+    return _buildPaperCardDecoration(isDark, color, borderColor, borderWidth, borderRadius, raised);
+  }
+
+  static BoxDecoration _buildPaperCardDecoration(
+    bool isDark,
+    Color? color,
+    Color? borderColor,
+    double borderWidth,
+    double borderRadius,
+    bool raised,
+  ) {
     final cardBg = color ?? (isDark ? AppColors.darkCard : AppColors.lightCard);
     final border = borderColor ?? (isDark ? AppColors.darkBorder : AppColors.lightBorder);
 
@@ -203,20 +257,7 @@ class PaperDecorations {
 
   /// Bottom nav dock shadow using black for depth
   static List<BoxShadow> dockShadow({required bool isDark}) {
-    return [
-      BoxShadow(
-        color: Colors.black.withAlpha(isDark ? 170 : 60),
-        offset: const Offset(0, 8),
-        blurRadius: 24,
-        spreadRadius: 2,
-      ),
-      BoxShadow(
-        color: Colors.black.withAlpha(isDark ? 90 : 35),
-        offset: const Offset(0, 2),
-        blurRadius: 6,
-        spreadRadius: 0,
-      ),
-    ];
+    return isDark ? _darkDockShadow : _lightDockShadow;
   }
 }
 

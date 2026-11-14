@@ -34,7 +34,7 @@ class SubjectDetailScreen extends StatelessWidget {
     final target = subject.targetPercentage ?? settings.defaultAttendanceTarget;
     final meetsTarget = stats.meetsTarget(target);
 
-    final allSubjectSessions = attendance.allSessions.where((s) => s.subjectId == subjectId).toList()
+    final allSubjectSessions = attendance.getSessionsForSubject(subjectId).toList()
       ..sort((a, b) => b.startDateTime.compareTo(a.startDateTime)); // newest first
 
     final now = DateTime.now();

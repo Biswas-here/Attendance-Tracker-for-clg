@@ -29,14 +29,21 @@ class NerdyIcons {
     Icons.integration_instructions_rounded,
   ];
 
+  static final Map<String, IconData> _iconCache = {};
+
   /// Deterministically returns a nerdy icon for a given subject identifier
   static IconData getIcon(String key) {
     if (key.isEmpty) return Icons.code_rounded;
+    final cached = _iconCache[key];
+    if (cached != null) return cached;
+
     int hash = 0;
     for (int i = 0; i < key.length; i++) {
       hash = (hash * 31 + key.codeUnitAt(i)) & 0x7FFFFFFF;
     }
-    return icons[hash % icons.length];
+    final icon = icons[hash % icons.length];
+    _iconCache[key] = icon;
+    return icon;
   }
 }
 

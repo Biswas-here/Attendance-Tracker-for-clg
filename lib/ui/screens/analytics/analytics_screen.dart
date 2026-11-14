@@ -200,11 +200,13 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 225,
-                        child: _buildSubjectBarChart(
-                          subjects: subjects,
-                          attendance: attendance,
-                          target: target,
-                          isDark: isDark,
+                        child: RepaintBoundary(
+                          child: _buildSubjectBarChart(
+                            subjects: subjects,
+                            attendance: attendance,
+                            target: target,
+                            isDark: isDark,
+                          ),
                         ),
                       ),
                     ],
@@ -236,155 +238,157 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 180,
-                        child: AnimatedBuilder(
-                          animation: _chartCurvedAnim,
-                          builder: (context, _) {
-                            final animFactor = _chartCurvedAnim.value;
-                            final currentOverallPct = overall.percentage != null
-                                ? (overall.percentage! * animFactor)
-                                : null;
-                            final presentPct = overall.totalMarked > 0
-                                ? (((overall.totalPresent / overall.totalMarked) * 100) * animFactor)
-                                : 0.0;
-                            final absentPct = overall.totalMarked > 0
-                                ? (((overall.totalAbsent / overall.totalMarked) * 100) * animFactor)
-                                : 0.0;
-                            final animatedRadiusPresent = 38.0 * animFactor.clamp(0.05, 1.0);
-                            final animatedRadiusAbsent = 34.0 * animFactor.clamp(0.05, 1.0);
+                        child: RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: _chartCurvedAnim,
+                            builder: (context, _) {
+                              final animFactor = _chartCurvedAnim.value;
+                              final currentOverallPct = overall.percentage != null
+                                  ? (overall.percentage! * animFactor)
+                                  : null;
+                              final presentPct = overall.totalMarked > 0
+                                  ? (((overall.totalPresent / overall.totalMarked) * 100) * animFactor)
+                                  : 0.0;
+                              final absentPct = overall.totalMarked > 0
+                                  ? (((overall.totalAbsent / overall.totalMarked) * 100) * animFactor)
+                                  : 0.0;
+                              final animatedRadiusPresent = 38.0 * animFactor.clamp(0.05, 1.0);
+                              final animatedRadiusAbsent = 34.0 * animFactor.clamp(0.05, 1.0);
 
-                            return Row(
-                              children: [
-                                Expanded(
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      PieChart(
-                                        PieChartData(
-                                          sectionsSpace: 4,
-                                          centerSpaceRadius: 42,
-                                          sections: [
-                                            PieChartSectionData(
-                                              value: overall.totalPresent.toDouble(),
-                                              title: '${overall.totalPresent}',
-                                              color: AppColors.present,
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [
-                                                  Color.lerp(AppColors.present, Colors.white, 0.25)!,
-                                                  AppColors.present,
-                                                  Color.lerp(AppColors.present, Colors.black, 0.3)!,
-                                                ],
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        PieChart(
+                                          PieChartData(
+                                            sectionsSpace: 4,
+                                            centerSpaceRadius: 42,
+                                            sections: [
+                                              PieChartSectionData(
+                                                value: overall.totalPresent.toDouble(),
+                                                title: '${overall.totalPresent}',
+                                                color: AppColors.present,
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Color.lerp(AppColors.present, Colors.white, 0.25)!,
+                                                    AppColors.present,
+                                                    Color.lerp(AppColors.present, Colors.black, 0.3)!,
+                                                  ],
+                                                ),
+                                                radius: animatedRadiusPresent,
+                                                titleStyle: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 14,
+                                                  shadows: [
+                                                    Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
+                                                  ],
+                                                ),
                                               ),
-                                              radius: animatedRadiusPresent,
-                                              titleStyle: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 14,
-                                                shadows: [
-                                                  Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
-                                                ],
+                                              PieChartSectionData(
+                                                value: overall.totalAbsent.toDouble(),
+                                                title: '${overall.totalAbsent}',
+                                                color: AppColors.absent,
+                                                gradient: LinearGradient(
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                  colors: [
+                                                    Color.lerp(AppColors.absent, Colors.white, 0.25)!,
+                                                    AppColors.absent,
+                                                    Color.lerp(AppColors.absent, Colors.black, 0.3)!,
+                                                  ],
+                                                ),
+                                                radius: animatedRadiusAbsent,
+                                                titleStyle: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 13,
+                                                  shadows: [
+                                                    Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                            PieChartSectionData(
-                                              value: overall.totalAbsent.toDouble(),
-                                              title: '${overall.totalAbsent}',
-                                              color: AppColors.absent,
-                                              gradient: LinearGradient(
-                                                begin: Alignment.topLeft,
-                                                end: Alignment.bottomRight,
-                                                colors: [
-                                                  Color.lerp(AppColors.absent, Colors.white, 0.25)!,
-                                                  AppColors.absent,
-                                                  Color.lerp(AppColors.absent, Colors.black, 0.3)!,
-                                                ],
-                                              ),
-                                              radius: animatedRadiusAbsent,
-                                              titleStyle: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w900,
-                                                fontSize: 13,
-                                                shadows: [
-                                                  Shadow(color: Colors.black45, blurRadius: 3, offset: Offset(0, 1)),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Central 3D Embossed Medallion
-                                      Container(
-                                        width: 72,
-                                        height: 72,
-                                        decoration: BoxDecoration(
-                                          color: isDark ? const Color(0xFF262320) : const Color(0xFFFBF8F2),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
-                                            width: 2,
+                                            ],
                                           ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withAlpha(isDark ? 90 : 35),
-                                              offset: const Offset(0, 3),
-                                              blurRadius: 6,
-                                            ),
-                                          ],
                                         ),
-                                        child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              currentOverallPct != null
-                                                  ? '${currentOverallPct.toStringAsFixed(0)}%'
-                                                  : '--',
-                                              style: const TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w900,
-                                                color: AppColors.craftTeal,
-                                              ),
+                                        // Central 3D Embossed Medallion
+                                        Container(
+                                          width: 72,
+                                          height: 72,
+                                          decoration: BoxDecoration(
+                                            color: isDark ? const Color(0xFF262320) : const Color(0xFFFBF8F2),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isDark ? AppColors.darkBorderStrong : AppColors.lightBorderStrong,
+                                              width: 2,
                                             ),
-                                            Text(
-                                              'OVERALL',
-                                              style: TextStyle(
-                                                fontSize: 8,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 0.6,
-                                                color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withAlpha(isDark ? 90 : 35),
+                                                offset: const Offset(0, 3),
+                                                blurRadius: 6,
                                               ),
-                                            ),
-                                          ],
+                                            ],
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                currentOverallPct != null
+                                                    ? '${currentOverallPct.toStringAsFixed(0)}%'
+                                                    : '--',
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: AppColors.craftTeal,
+                                                ),
+                                              ),
+                                              Text(
+                                                'OVERALL',
+                                                style: TextStyle(
+                                                  fontSize: 8,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 0.6,
+                                                  color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _build3DPieLegend(
+                                        color: AppColors.present,
+                                        label: 'Present',
+                                        count: '${overall.totalPresent}',
+                                        sub: '${presentPct.toStringAsFixed(1)}%',
+                                        isDark: isDark,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      _build3DPieLegend(
+                                        color: AppColors.absent,
+                                        label: 'Absent',
+                                        count: '${overall.totalAbsent}',
+                                        sub: '${absentPct.toStringAsFixed(1)}%',
+                                        isDark: isDark,
                                       ),
                                     ],
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    _build3DPieLegend(
-                                      color: AppColors.present,
-                                      label: 'Present',
-                                      count: '${overall.totalPresent}',
-                                      sub: '${presentPct.toStringAsFixed(1)}%',
-                                      isDark: isDark,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _build3DPieLegend(
-                                      color: AppColors.absent,
-                                      label: 'Absent',
-                                      count: '${overall.totalAbsent}',
-                                      sub: '${absentPct.toStringAsFixed(1)}%',
-                                      isDark: isDark,
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-                            );
-                          },
+                                  const SizedBox(width: 8),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ),
                     ],
@@ -424,10 +428,12 @@ class _AnalyticsScreenState extends State<AnalyticsScreen>
                       const SizedBox(height: 16),
                       SizedBox(
                         height: 195,
-                        child: _buildAttendanceTrendChart(
-                          allSessions: allSessions,
-                          target: target,
-                          isDark: isDark,
+                        child: RepaintBoundary(
+                          child: _buildAttendanceTrendChart(
+                            allSessions: allSessions,
+                            target: target,
+                            isDark: isDark,
+                          ),
                         ),
                       ),
                     ],

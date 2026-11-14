@@ -6,8 +6,8 @@ class HolidayUtils {
   static bool isHoliday(DateTime date, UserSettings settings) {
     final ymd = AppDateUtils.formatDateYmd(date);
 
-    // 1. Check custom declared holidays
-    if (settings.customHolidaysList.contains(ymd)) {
+    // 1. Check custom declared holidays (O(1) Set lookup)
+    if (settings.customHolidaysSet.contains(ymd)) {
       return true;
     }
 
@@ -38,7 +38,7 @@ class HolidayUtils {
   /// Returns a human-friendly description of why the day is off
   static String? getHolidayReason(DateTime date, UserSettings settings) {
     final ymd = AppDateUtils.formatDateYmd(date);
-    if (settings.customHolidaysList.contains(ymd)) {
+    if (settings.customHolidaysSet.contains(ymd)) {
       return 'Declared Holiday';
     }
 

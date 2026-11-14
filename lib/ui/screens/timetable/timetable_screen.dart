@@ -9,6 +9,7 @@ import '../../../providers/settings_provider.dart';
 import '../../widgets/paper_card.dart';
 import '../../widgets/paper_stamp.dart';
 import '../../widgets/staggered_entrance.dart';
+import 'exam_schedule_dialog.dart';
 import 'schedule_class_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
@@ -274,95 +275,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  void _showQuickAddDialog(DateTime date) {
-    final attendance = context.read<AttendanceProvider>();
-    final settings = context.read<SettingsProvider>().settings;
-    final subjects = attendance.subjects;
-
-    if (subjects.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add a subject first!')),
-      );
-      return;
-    }
-
-    String selectedSubjectId = subjects.first.id;
-    TimeOfDay startTime = const TimeOfDay(hour: 9, minute: 0);
-    TimeOfDay endTime = const TimeOfDay(hour: 10, minute: 0);
-
+  void _showExamScheduleDialog(DateTime date) {
     showDialog(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text('Quick Add Class for ${AppDateUtils.formatShortDate(date)}'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Select Subject:', style: TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedSubjectId,
-                  items: subjects.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))).toList(),
-                  onChanged: (val) {
-                    if (val != null) setDialogState(() => selectedSubjectId = val);
-                  },
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.access_time, size: 16),
-                        label: Text(startTime.format(context)),
-                        onPressed: () async {
-                          final picked = await showTimePicker(context: context, initialTime: startTime);
-                          if (picked != null) setDialogState(() => startTime = picked);
-                        },
-                      ),
-                    ),
-                    const Text('to'),
-                    Expanded(
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.access_time, size: 16),
-                        label: Text(endTime.format(context)),
-                        onPressed: () async {
-                          final picked = await showTimePicker(context: context, initialTime: endTime);
-                          if (picked != null) setDialogState(() => endTime = picked);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.craftTeal,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () async {
-                  final startStr = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-                  final endStr = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
-
-                  await attendance.addSingleSession(
-                    subjectId: selectedSubjectId,
-                    date: date,
-                    startTime: startStr,
-                    endTime: endStr,
-                    userSettings: settings,
-                  );
-                  if (ctx.mounted) Navigator.pop(ctx);
-                },
-                child: const Text('OK', style: TextStyle(fontWeight: FontWeight.w800, color: Colors.white)),
-              ),
-            ],
-          );
-        },
-      ),
+      builder: (_) => ExamScheduleDialog(initialDate: date),
     );
   }
 
@@ -673,9 +589,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
                         ),
                       ),
                     ),
-                    onPressed: () => _showQuickAddDialog(selectedDate),
-                    icon: const Icon(Icons.add_circle_outline, size: 16),
-                    label: const Text('Quick Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+                    onPressed: () => _showExamScheduleDialog(selectedDate),
+                    icon: const Icon(Icons.school_outlined, size: 16, color: AppColors.craftTeal),
+                    label: const Text('Exam Schedule', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
                   ),
                 ],
               ),
@@ -701,7 +617,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       Text(
                         holidayReason != null
                             ? 'This date is marked as an off-day ($holidayReason).'
-                            : 'Tap Quick Add or Schedule above to add a class.',
+                            : 'Tap Schedule above to add a class.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 12,

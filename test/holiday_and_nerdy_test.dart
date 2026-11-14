@@ -59,6 +59,16 @@ void main() {
       expect(HolidayUtils.getHolidayReason(holidayDate, settings), 'Declared Holiday');
       expect(HolidayUtils.isHoliday(regularDate, settings), false);
     });
+
+    test('Declared holiday dates correctly identify custom holiday set', () {
+      final settings = UserSettings(
+        customHolidays: '2026-11-20,2026-11-21',
+      );
+      expect(settings.customHolidaysSet.contains('2026-11-20'), true);
+      expect(settings.customHolidaysSet.contains('2026-11-21'), true);
+      expect(HolidayUtils.isHoliday(DateTime(2026, 11, 20), settings), true);
+      expect(HolidayUtils.isHoliday(DateTime(2026, 11, 23), settings), false);
+    });
   });
 
   group('NerdyIcons Tests', () {

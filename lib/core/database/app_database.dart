@@ -335,6 +335,22 @@ class AppDatabase {
     return await db.delete('class_sessions', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Delete all sessions on a given date (e.g. when declaring a holiday or full-day exam)
+  Future<int> deleteSessionsForDate(String dateStr) async {
+    final db = await database;
+    return await db.delete('class_sessions', where: 'date = ?', whereArgs: [dateStr]);
+  }
+
+  /// Delete sessions on a given date that overlap with a time range (e.g. for half-day exams)
+  Future<int> deleteSessionsOverlappingTime(String dateStr, String startTime, String endTime) async {
+    final db = await database;
+    return await db.delete(
+      'class_sessions',
+      where: 'date = ? AND start_time < ? AND end_time > ?',
+      whereArgs: [dateStr, endTime, startTime],
+    );
+  }
+
   /// Delete unmarked sessions outside the given date range (e.g. when shrinking semester bounds)
   Future<int> deleteUnmarkedSessionsOutsideRange(String startDateStr, String endDateStr) async {
     final db = await database;

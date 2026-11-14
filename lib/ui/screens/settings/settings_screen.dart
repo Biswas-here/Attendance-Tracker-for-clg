@@ -599,6 +599,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   if (picked != null) {
                     final ymd = AppDateUtils.formatDateYmd(picked);
                     await prov.addCustomHoliday(ymd);
+                    if (!mounted) return;
+                    final attendance = context.read<AttendanceProvider>();
+                    final removed = await attendance.removeClassesOnHoliday(ymd, prov.settings);
+                    if (!mounted) return;
+                    if (removed > 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Declared holiday added! $removed class(es) on this day removed from total classes.'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                   }
                 },
                 icon: const Icon(Icons.add, size: 16),

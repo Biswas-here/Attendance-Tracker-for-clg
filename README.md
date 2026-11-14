@@ -79,11 +79,16 @@ Building Attendance Ledger required combining modern cross-platform UI framework
 
 ### 5. ⚙️ Smart Holiday & Profile System
 - Configurable Saturday off pattern (e.g., 2nd & 4th Saturdays, 1st & 3rd, or all Saturdays).
-- Custom holiday manager to input college-specific festivals or institutional holidays.
+- Custom declared holiday manager to input college-specific festivals or institutional holidays, automatically removing scheduled classes on those days from total attendance.
 - Semester milestone tracker with a celebratory screen upon completion of final exams.
 - Persistent profile picture and customizable default attendance target (default 75%).
 
-### 6. 🌙 Zero-Flicker Light & Dark Themes
+### 6. 📝 Exam & Holiday Planner
+- **Full-Day or Half-Day Mode**: Schedule exam periods where regular classes are cancelled, or half-day exams where classes during exam hours are pruned while remaining classes stay intact.
+- **In-Between Study Leave**: Optional toggle automatically treats gap days between exams as preparation holidays, excluding them from overall attendance.
+- **Exam Attendance Tracking**: Track exam attendance directly on your ledger with designated exam sessions.
+
+### 7. 🌙 Zero-Flicker Light & Dark Themes
 - Beautiful paper-textured light theme and OLED-friendly dark mode.
 - Caches theme and settings prior to the first frame render to eliminate startup flicker.
 
@@ -119,7 +124,8 @@ All official APK builds are hosted directly under the **[Releases Tab](https://g
 
 | Version | Status | Release Date | Package Name | Compatible Android | Location |
 |---|---|---|---|---|---|
-| **v1.0.0 (Version 1.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v1.0.apk` (or `.zip`) | Android 5.0+ (API 21+) | [**Go to Releases ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
+| **v2.0.0 (Version 2.0)** | 🟢 **Latest (Recommended)** | November 2026 | `Attendance-Tracker-v2.0.apk` (or `.zip`) | Android 5.0+ (API 21+) | [**Go to Releases ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
+| **v1.0.0 (Version 1.0)** | ⚪ Previous Stable | November 2026 | `Attendance-Tracker-v1.0.apk` (or `.zip`) | Android 5.0+ (API 21+) | [**Go to Releases ➜**](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases) |
 
 ### 📲 How To Download (3 Easy Steps)
 
@@ -128,8 +134,8 @@ Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  �
 ```
 
 1. Click on the **[Releases Tab](https://github.com/Biswas-here/Attendance-Tracker-for-clg/releases)** in the sidebar on GitHub.
-2. The **latest recommended version (v1.0.0)** is at the top. Under the top release, open the **Assets** section.
-3. Tap **`Attendance-Tracker-v1.0.apk`** (or **`Attendance-Tracker-v1.0.zip`**) to download it directly to your phone.
+2. The **latest recommended version (v2.0.0)** is at the top. Under the top release, open the **Assets** section.
+3. Tap **`Attendance-Tracker-v2.0.apk`** (or **`Attendance-Tracker-v2.0.zip`**) to download it directly to your phone.
 4. If Android asks *"File might be harmful"*, tap **"Download anyway"** *(standard Android security notice for sideloaded APKs)*.
 5. Open your downloads folder, tap the APK, and select **Install**!
 

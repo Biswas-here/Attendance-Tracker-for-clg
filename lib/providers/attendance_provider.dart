@@ -62,14 +62,19 @@ class AttendanceProvider with ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> loadData({bool showLoading = true}) async {
+  Future<void> loadData({bool showLoading = true, UserSettings? userSettings}) async {
     if (showLoading && _allSessions.isEmpty) {
       _isLoading = true;
       notifyListeners();
     }
     try {
       _subjects = await AppDatabase.instance.getAllSubjects();
-      _allSessions = await AppDatabase.instance.getAllSessions();
+      final rawSessions = await AppDatabase.instance.getAllSessions();
+      if (userSettings != null && userSettings.customHolidaysSet.isNotEmpty) {
+        _allSessions = rawSessions.where((s) => !userSettings.customHolidaysSet.contains(s.date)).toList();
+      } else {
+        _allSessions = rawSessions;
+      }
       _rebuildSessionsIndex();
     } catch (e) {
       debugPrint('Error loading attendance data: $e');
@@ -140,8 +145,13 @@ class AttendanceProvider with ChangeNotifier {
   // --- TIMETABLE / CALENDAR HELPERS ---
 
   List<ClassSession> getSessionsForDate(DateTime date, [UserSettings? settings]) {
-    if (settings != null && settings.hasSemesterRange && !settings.isDateInSemester(date)) {
-      return const [];
+    if (settings != null) {
+      if (settings.hasSemesterRange && !settings.isDateInSemester(date)) {
+        return const [];
+      }
+      if (HolidayUtils.isHoliday(date, settings)) {
+        return const [];
+      }
     }
     final dateStr = AppDateUtils.formatDateYmd(date);
     return _sessionsByDate[dateStr] ?? const [];
@@ -578,5 +588,112 @@ class AttendanceProvider with ChangeNotifier {
   Future<void> rescheduleAllNotifications(UserSettings settings) async {
     await NotificationService.instance.cancelAll();
     await syncAllUpcomingNotifications(settings);
+  }
+
+  /// Remove all scheduled classes on a declared holiday date and recalculate stats
+  Future<int> removeClassesOnHoliday(String ymd, UserSettings settings) async {
+    final sessions = _sessionsByDate[ymd] ?? [];
+    for (final s in sessions) {
+      await NotificationService.instance.cancelSessionReminder(s.id);
+    }
+    final deleted = await AppDatabase.instance.deleteSessionsForDate(ymd);
+    await loadData(showLoading: false, userSettings: settings);
+    await syncAllUpcomingNotifications(settings);
+    return deleted;
+  }
+
+  /// Apply Exam Schedule & In-Between Holiday Leave
+  Future<Map<String, int>> applyExamSchedule({
+    required bool isHalfDay,
+    required String? examStartTime,
+    required String? examEndTime,
+    required List<Map<String, dynamic>> exams, // each: {'date': ymd, 'subjectId': id, 'room': room}
+    required bool excludeGapDays,
+    required bool createExamSessions,
+    required UserSettings settings,
+    required Future<void> Function(List<String> holidaysToAdd) onHolidaysAdded,
+  }) async {
+    int conflictingClassesRemoved = 0;
+    int examSessionsCreated = 0;
+    int gapHolidaysAdded = 0;
+
+    final examDateStrs = exams.map((e) => e['date'] as String).toSet();
+
+    // 1. Process each exam date
+    for (final exam in exams) {
+      final dateStr = exam['date'] as String;
+      final subjectId = exam['subjectId'] as String;
+      final room = (exam['room'] as String?)?.trim().isNotEmpty == true
+          ? (exam['room'] as String).trim()
+          : 'Exam Hall';
+
+      // Cancel notifications for existing sessions on this date
+      final existingSessions = _sessionsByDate[dateStr] ?? [];
+      for (final s in existingSessions) {
+        await NotificationService.instance.cancelSessionReminder(s.id);
+      }
+
+      if (!isHalfDay) {
+        // Full-day exam / holiday after exam: Remove all regular classes on that date
+        final deleted = await AppDatabase.instance.deleteSessionsForDate(dateStr);
+        conflictingClassesRemoved += deleted;
+      } else {
+        // Half-day exam: Remove regular classes overlapping with exam hours
+        final startTime = examStartTime ?? '09:30';
+        final endTime = examEndTime ?? '12:30';
+        final deleted = await AppDatabase.instance.deleteSessionsOverlappingTime(dateStr, startTime, endTime);
+        conflictingClassesRemoved += deleted;
+      }
+
+      // If user wants to track attendance for the exam itself, create an exam session
+      if (createExamSessions) {
+        final examSession = ClassSession(
+          id: const Uuid().v4(),
+          subjectId: subjectId,
+          date: dateStr,
+          startTime: isHalfDay ? (examStartTime ?? '09:30') : '10:00',
+          endTime: isHalfDay ? (examEndTime ?? '12:30') : '13:00',
+          room: room,
+          status: AttendanceStatus.unmarked,
+        );
+        await AppDatabase.instance.insertSession(examSession);
+        examSessionsCreated++;
+      }
+    }
+
+    // 2. Process gap days between first and last exam if toggle is ON
+    if (excludeGapDays && exams.length >= 2) {
+      final sortedExamDates = exams.map((e) => DateTime.parse(e['date'] as String)).toList()..sort();
+      final firstDate = sortedExamDates.first;
+      final lastDate = sortedExamDates.last;
+
+      final gapDatesToAdd = <String>[];
+      var cur = firstDate.add(const Duration(days: 1));
+      while (cur.isBefore(lastDate)) {
+        final ymd = AppDateUtils.formatDateYmd(cur);
+        if (!examDateStrs.contains(ymd)) {
+          gapDatesToAdd.add(ymd);
+          // Delete any regular classes scheduled on this gap holiday
+          final deleted = await AppDatabase.instance.deleteSessionsForDate(ymd);
+          conflictingClassesRemoved += deleted;
+          gapHolidaysAdded++;
+        }
+        cur = cur.add(const Duration(days: 1));
+      }
+
+      if (gapDatesToAdd.isNotEmpty) {
+        await onHolidaysAdded(gapDatesToAdd);
+      }
+    }
+
+    // Reload data and sync notifications
+    await loadData(showLoading: false, userSettings: settings);
+    await syncAllUpcomingNotifications(settings);
+
+    return {
+      'removed': conflictingClassesRemoved,
+      'exams': examSessionsCreated,
+      'gaps': gapHolidaysAdded,
+    };
   }
 }

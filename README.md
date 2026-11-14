@@ -135,15 +135,6 @@ Step 1: Open Releases Tab  ──▶  Step 2: Expand "Assets" on top release  �
 
 ---
 
-## 🔒 Note on Making This Repository Private
-
-If you decide to switch this repository from **Public** to **Private**:
-- **Releases & Code:** Only you and people you invite as GitHub collaborators under **Settings → Collaborators** will be able to access the repo and download release files.
-- **GitHub Pages:** On standard free GitHub accounts, GitHub Pages is supported on public repositories. If set to private, GitHub requires a GitHub Pro or Team plan to host Pages.
-- **Self-Contained Assets:** All screenshots, icons, and styling inside the `docs/` folder use relative file paths, so nothing breaks regardless of your repository's visibility status.
-
----
-
 ## 🚀 Building From Source
 
 If you want to compile the project yourself:

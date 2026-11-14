@@ -87,6 +87,7 @@ class _LedgerScreenState extends State<LedgerScreen> {
   }
 
   Set<String> _manuallyCompletedFinals = {};
+  bool _showSlideTip = false;
 
   @override
   void initState() {
@@ -99,16 +100,30 @@ class _LedgerScreenState extends State<LedgerScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final list = prefs.getStringList('manually_completed_finals_v2') ?? [];
+      final tipSeen = prefs.getBool('finals_slide_tip_seen_v1') ?? false;
       if (mounted) {
         setState(() {
           _manuallyCompletedFinals = list.toSet();
+          _showSlideTip = !tipSeen;
         });
       }
     } catch (_) {}
   }
 
+  Future<void> _dismissSlideTip() async {
+    if (!_showSlideTip) return;
+    setState(() {
+      _showSlideTip = false;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('finals_slide_tip_seen_v1', true);
+    } catch (_) {}
+  }
+
   Future<void> _toggleManualCompletion(String examKey) async {
     HapticService.selection();
+    _dismissSlideTip();
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       if (_manuallyCompletedFinals.contains(examKey)) {
@@ -1537,66 +1552,108 @@ class _LedgerScreenState extends State<LedgerScreen> {
           ),
         ),
 
-        // Tip banner
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2563EB).withAlpha(isDark ? 28 : 16),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF2563EB).withAlpha(50)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.swipe_left_rounded, size: 15, color: Color(0xFF2563EB)),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Slide left on any exam to manually tick or untick it',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF),
+        // Tip banner: shows once until dismissed or first slide action
+        if (_showSlideTip) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2563EB).withAlpha(isDark ? 28 : 16),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF2563EB).withAlpha(50)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.swipe_left_rounded, size: 15, color: Color(0xFF2563EB)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Slide left on any exam to manually tick or untick it',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? const Color(0xFF60A5FA) : const Color(0xFF1E40AF),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  GestureDetector(
+                    onTap: _dismissSlideTip,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 14,
+                        color: isDark ? AppColors.darkTextTertiary : AppColors.lightTextTertiary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          const SizedBox(height: 4),
+        ],
+
+        // ── EXAMINATION BOXES ORDERED BY CLOSEST DATE ─────────────────────
+        Builder(
+          builder: (context) {
+            bool showLabFirst = false;
+            if (theoryExams.isNotEmpty && labExams.isNotEmpty) {
+              final cmp = theoryExams.first.date.compareTo(labExams.first.date);
+              if (cmp > 0) {
+                // Lab starts earlier than Theory
+                showLabFirst = true;
+              } else if (cmp == 0) {
+                showLabFirst = theoryExams.first.startTime.compareTo(labExams.first.startTime) > 0;
+              } else {
+                showLabFirst = false;
+              }
+            } else if (labExams.isNotEmpty) {
+              showLabFirst = true;
+            }
+
+            final theoryBox = theoryExams.isNotEmpty
+                ? _buildExamCategoryBox(
+                    context: context,
+                    attendance: attendance,
+                    isDark: isDark,
+                    title: 'THEORY EXAMINATIONS',
+                    icon: Icons.menu_book_rounded,
+                    primaryColor: const Color(0xFF1E40AF),
+                    exams: theoryExams,
+                    today: today,
+                    isLab: false,
+                  )
+                : null;
+
+            final labBox = labExams.isNotEmpty
+                ? _buildExamCategoryBox(
+                    context: context,
+                    attendance: attendance,
+                    isDark: isDark,
+                    title: 'LAB / PRACTICAL EXAMINATIONS',
+                    icon: Icons.science_rounded,
+                    primaryColor: const Color(0xFF0284C7),
+                    exams: labExams,
+                    today: today,
+                    isLab: true,
+                  )
+                : null;
+
+            final firstBox = showLabFirst ? labBox : theoryBox;
+            final secondBox = showLabFirst ? theoryBox : labBox;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ?firstBox,
+                if (firstBox != null && secondBox != null) const SizedBox(height: 10),
+                ?secondBox,
+              ],
+            );
+          },
         ),
-        const SizedBox(height: 6),
-
-        // ── 1. THEORY EXAMINATIONS BOX (DARKER SHADE) ──────────────────────
-        if (theoryExams.isNotEmpty)
-          _buildExamCategoryBox(
-            context: context,
-            attendance: attendance,
-            isDark: isDark,
-            title: 'THEORY EXAMINATIONS',
-            icon: Icons.menu_book_rounded,
-            primaryColor: const Color(0xFF1E40AF),
-            exams: theoryExams,
-            today: today,
-            isLab: false,
-          ),
-
-        if (theoryExams.isNotEmpty && labExams.isNotEmpty)
-          const SizedBox(height: 10),
-
-        // ── 2. LAB / PRACTICAL EXAMINATIONS BOX (LIGHTER SHADE) ─────────────
-        if (labExams.isNotEmpty)
-          _buildExamCategoryBox(
-            context: context,
-            attendance: attendance,
-            isDark: isDark,
-            title: 'LAB / PRACTICAL EXAMINATIONS',
-            icon: Icons.science_rounded,
-            primaryColor: const Color(0xFF0284C7),
-            exams: labExams,
-            today: today,
-            isLab: true,
-          ),
       ],
     );
   }
